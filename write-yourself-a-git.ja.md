@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:43:23">2020年11月23日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T07:45:13">2020年11月23日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -354,6 +354,35 @@ wyag init [path]
     ```
 
 これで終わりです！　この手順を踏めば、どこにでも git リポジトリを `wyag init` できるようになるはずです。 <!-- And we’re done! If you’ve followed these steps, you should now be able to wayg init a git repository anywhere. -->
+
+### repo_find() 関数 <!-- The repo_find() function -->
+
+リポジトリを実装しているうちに後々必要になる関数があります: Git の機能［訳註: 原文の「 init 」を取り除きました。おかしかったら後で直します。］は大抵既存のリポジトリを使います。リポジトリは現在のディレクトリにあることが多いですが、代わりに親ディレクトリにあることもあります。（リポジトリのルートが `~/Documents/MyProject` で、現在のディレクトリが `~/Documents/MyProject/src/tui/frames/mainview/` のように。）これから作る関数 `repo_find()` は、現在のディレクトリから始めて `/` まで遡ってリポジトリを探します。リポジトリとして識別するには `.git` ディレクトリの存在を確認します。 <!-- While we’re implementing repositories, there’s a function we’re going to need a lot later: Almost all Git functions init use an existing repository. It’s often in the current directory, but it may be in a parent instead: your repository’s root may be in ~/Documents/MyProject, but you may currently be in ~/Documents/MyProject/src/tui/frames/mainview/. The repo_find() function we’ll now create will look for a repository, starting at current directory and recursing back until /. To identify something as a repo, it will check for the presence of a .git directory. -->
+
+``` py
+def repo_find(path=".", required=True):
+    path = os.path.realpath(path)
+
+    if os.path.isdir(os.path.join(path, ".git")):
+        return GitRepository(path)
+
+    # If we haven't returned, recurse in parent, if w
+    parent = os.path.realpath(os.path.join(path, ".."))
+
+    if parent == path:
+        # Bottom case
+        # os.path.join("/", "..") == "/":
+        # If parent==path, then path is root.
+        if required:
+            raise Exception("No git directory.")
+        else:
+            return None
+
+    # Recursive case
+    return repo_find(parent, required)
+```
+
+これでリポジトリの完成です！ <!-- And we’re done with repositories! -->
 
 ## 後書き <!-- Final words -->
 
