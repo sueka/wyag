@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、<time datetime="2020-11-21">2020年11月22日</time>に変更されました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:08:48">2020年11月23日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -50,6 +50,121 @@ Git を実装することで、その基本を全て赤裸々に曝け出させ�
 `wyag` は、 Python インタープリターがある任意の Unix-like システム上で動くはずですが、 Windows 上でどう振る舞うかについてはまったく分かりません。テストスイートは bash 互換シェルを要求しますが、これは WSL によって提供されると思います。 Windows ユーザーからのフィードバックがあれば有り難いです！ <!-- wyag should run on any Unix-like system with a Python interpreter, but I have absolutely no idea how it will behave on Windows. The test suite absolutely requires a bash-compatible shell, which I assume the WSL can provide. Feedback from Windows users would be appreciated! -->
 
 ---
+
+## 入門 <!-- Getting started -->
+
+Python 3 （私は 3.6.5 を使っています。問題に当たったらこれ以上のバージョンを使ってみてください。 Python 2 では全く動作しません。）とあなたのお気に入りのテキストエディターが必要です。サードパーティパッケージや virtualenvs 、通常の Python インタープリター以外のものは必要ありません: 必要なものは全て Python 標準ライブラリにあります。 <!-- You’re going to need Python 3 (I used 3.6.5: if you encounter issues try using at least this version. Python 2 won’t work at all) and your favorite text editor. We won’t need third party packages or virtualenvs, or anything besides a regular Python interpreter: everything we need is in Python’s standard library. -->
+
+私達はコードを2つのファイルに分割します: <!-- We’ll split the code into two files: -->
+
+- 実行可能形式。 `wyag` と呼びます。 <!-- An executable, called wyag; -->
+- Python ライブラリ。 `libwyag.py` と呼びます。 <!-- A Python library, called libwyag.py; -->
+
+さて、全てのソフトウェアプロジェクトは大量のボイラープレートから始まります。これを乗り越えましょう。 <!-- Now, every software project starts with a boatload of boilerplate, so let’s get this over with. -->
+
+バイナリの作成から始めます。テキストエディターで `wyag` という名前の新しいファイルを作成して、次の数行をコピーしてください: <!-- We’ll begin by creating the binary. Create a new file called wyag in your text editor, and copy the following few lines: -->
+
+``` py
+#!/usr/bin/env python3
+
+import libwyag
+libwyag.main()
+```
+
+そして、実行可能にします: <!-- Then make it executable: -->
+
+``` sh
+chmod +x wyag
+```
+
+出来ました！ <!-- You’re done! -->
+
+今度はライブラリです。ライブラリは `libwyag.py` という名前で、 `wyag` 実行可能形式と同じディレクトリに無ければなりません。テキストエディターで空っぽの `libwyag.py` を開くことから始めます。 <!-- Now for the library. it must be called libwyag.py, and be in the same directory as the wyag executable. Begin by opening the empty libwyag.py in your text editor. -->
+
+まず、大量の import が必要です。（単に各 import をコピーするか、それらを全て1行にマージしてください。） <!-- We’re first going to need a bunch of imports (just copy each import, or merge them all in a single line) -->
+
+- Git は CLI アプリケーションなので、コマンドライン引数をパーズするためのものが必要です。 Python は [argparse](https://docs.python.org/3/library/argparse.html) というクールなモジュールを提供しています。このモジュールは私達の仕事の 99 % を行えます。 <!-- Git is a CLI application, so we’ll need something to parse command-line arguments. Python provides a cool module called argparse that can do 99% of the job for us. -->
+
+  ``` py
+  import argparse
+  ```
+
+- base ライブラリが提供するよりも少し多くのコンテナー型、とくに `OrderedDict` が必要です。 [collections](https://docs.python.org/3/library/collections.html#collections.OrderedDict) にあります。 <!-- We’ll need a few more container types than the base lib provides, most notably an OrderedDict. It’s in collections. -->
+
+  ``` py
+  import collections
+  ```
+
+- Git は基本的に Microsoft の INI 形式の構成ファイル形式を使います。 [configparser](https://docs.python.org/3/library/configparser.html) モジュールはそれらのファイルを読み書きできます。 <!-- Git uses a configuration file format that is basically Microsoft’s INI format. The configparser module can read and write these files. -->
+
+  ``` py
+  import configparser
+  ```
+
+- Git は SHA-1 関数をかなり広い範囲で使います。 Python では、これは [hashlib](https://docs.python.org/3/library/hashlib.html) にあります。 <!-- Git uses the SHA-1 function quite extensively. In Python, it’s in hashlib. -->
+
+  ``` py
+  import hashlib
+  ```
+
+- [os](https://docs.python.org/3/library/os.html) と [os.path](https://docs.python.org/3/library/os.path.html) は魅力的なファイルシステム抽象化ルーチンを提供します。 <!-- os and os.path provide some nice filesystem abstraction routines. -->
+
+  ``` py
+  import os
+  ```
+
+- 正規表現を*少しだけ*使います: <!-- we use just a bit of regular expressions: -->
+
+  ``` py
+  import re
+  ```
+
+- （ `sys.argv` にある）実際のコマンドライン引数にアクセスするために、 [sys](https://docs.python.org/3/library/sys.html) も必要です。 <!-- We also need sys to access the actual command-line arguments (in sys.argv): -->
+
+  ``` py
+  import sys
+  ```
+
+- Git は全てを zlib で圧縮します。[これも Python にあります](https://docs.python.org/3/library/zlib.html): <!-- Git compresses everything using zlib. Python has that, too: -->
+
+  ``` py
+  import zlib
+  ```
+
+import は以上です。コマンドライン引数を扱うことが多くなってきます。 Python はシンプルでありながらそれなりに強力なパーズライブラリ `argparse` を提供しています。これは素晴らしいライブラリですが、インターフェイスは最も直感的とまではいかないかもしれません。必要なら[ドキュメント](https://docs.python.org/3/library/argparse.html)を参照してください。 <!-- Imports are done. We’ll be working with command-line arguments a lot. Python provides a simple yet reasonably powerful parsing library, argparse. It’s a nice library, but its interface may not be the most intuitive ever; if need, refer to its documentation. -->
+
+``` py
+argparser = argparse.ArgumentParser(description="The stupid content tracker")
+```
+
+私達は（git の `init`, `commit` などのような）サブコマンドを扱う必要があります。 argparse のスラングでは、これらは「サブパーザー」と呼ばれます。現時点で必要なのは、私達の CLI がその中のいくつかを使用するということと、全ての呼び出しが実際にはその中の一つ（単に `git` と呼ぶのではなく、 `git COMMAND` と呼びます。）を*要求する*ということを宣言することだけです。 <!-- We’ll need to handle subcommands (as in git: init, commit, etc.) In argparse slang, these are called “subparsers”. At this point we only need to declare that our CLI will use some, and that all invocation will actually require one — you don’t just call git, you call git COMMAND. -->
+
+``` py
+argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
+argsubparsers.required = True
+```
+
+`dest="command"` 引数は、選択されたサブパーザーの名前が `command` というフィールドにある文字列として返されることを表します。なので、必要なことは、この文字列を読み取り、適宜正しい関数を呼び出すことだけです。慣例では、これらの関数の前に `cmd_` を付けます。 `cmd_*` 関数は、パーズされた引数を唯一のパラメーターに取り、実際のコマンドを実行する前にそれを処理し、検証する責任を負います。 <!-- The dest="command" argument states that the name of the chosen subparser will be returned as a string in a field called command. So we just need to read this string and call the correct function accordingly. By convention, I’ll prefix these functions by cmd_. cmd_* functions take the parsed arguments as their unique parameter, and are responsible for processing and validating them before executing the actual command. -->
+
+``` py
+def main(argv=sys.argv[1:]):
+    args = argparser.parse_args(argv)
+
+    if   args.command == "add"         : cmd_add(args)
+    elif args.command == "cat-file"    : cmd_cat_file(args)
+    elif args.command == "checkout"    : cmd_checkout(args)
+    elif args.command == "commit"      : cmd_commit(args)
+    elif args.command == "hash-object" : cmd_hash_object(args)
+    elif args.command == "init"        : cmd_init(args)
+    elif args.command == "log"         : cmd_log(args)
+    elif args.command == "ls-tree"     : cmd_ls_tree(args)
+    elif args.command == "merge"       : cmd_merge(args)
+    elif args.command == "rebase"      : cmd_rebase(args)
+    elif args.command == "rev-parse"   : cmd_rev_parse(args)
+    elif args.command == "rm"          : cmd_rm(args)
+    elif args.command == "show-ref"    : cmd_show_ref(args)
+    elif args.command == "tag"         : cmd_tag(args)
+```
 
 ## 後書き <!-- Final words -->
 
