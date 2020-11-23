@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:08:48">2020年11月23日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:10:25">2020年11月23日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -164,6 +164,158 @@ def main(argv=sys.argv[1:]):
     elif args.command == "rm"          : cmd_rm(args)
     elif args.command == "show-ref"    : cmd_show_ref(args)
     elif args.command == "tag"         : cmd_tag(args)
+```
+
+## リポジトリの作成: init <!-- Creating repositories: init -->
+
+時系列順*でも*論理順*でも*最初の Git コマンドが `git init` であることは明らかなので、 `wyag init` を作るところから始めます。これを達成するには、まず、ごく基本的なリポジトリの抽象が必要です。 <!-- Obviously, the first Git command in chronological and logical order is git init, so we’ll begin by creating wyag init. To achieve this, we’re going to first need some very basic repository abstraction. -->
+
+### Repository オブジェクト <!-- The Repository object -->
+
+リポジトリの抽象が必要であることは明白です: 私達は、 git コマンドを実行する時はほとんどいつでも、リポジトリに何かするか、リポジトリを作成するか、リポジトリから何かを読み取るか、あるいはリポジトリを修正するかしようとしています。 <!-- We’ll obviously need some abstraction for a repository: almost every time we run a git command, we’re trying to do something to a repository, to create it, read from it or modify it. -->
+
+git では、リポジトリは2つの物から成ります: バージョン管理されているファイルがある「ワークツリー」と、 Git が自身のデータを保存する「 git ディレクトリ」です。多くの場合、ワークツリーは通常のディレクトリであり、 git ディレクトリは、 `.git` という名前の、ワークツリーの子ディレクトリです。 <!-- A repository, in git, is made of two things: a “work tree”, where the files meant to be in version control live, and a “git directory”, where Git stores its own data. In most cases, the worktree is a regular directory and the git directory is a child directory of the worktree, called .git. -->
+
+Git は*より多くの*ケース（ bare リポジトリや分離された gitdir など）をサポートしますが、これは私達には必要ありません: 基本的な `worktree/.git` のアプローチを取ります。リポジトリオブジェクトは2つのパス（ワークツリーと gitdir ）を保持するだけです。 <!-- Git supports much more cases (bare repo, separated gitdir, etc) but we won’t need them: we’ll stick the basic approach of worktree/.git. Our repository object will then just hold two paths: the worktree and the gitdir. -->
+
+新しい `Repository` オブジェクトを作るには、少しだけチェックが必要です: <!-- To create a new Repository object, we only need to make a few checks: -->
+
+- ディレクトリが存在し、そこに `.git` という名前のサブディレクトリが含まれていることを確認しなければなりません。 <!-- We must verify that the directory exists, and contains a subdirectory called .git. -->
+- `.git/config` （単なる INI ファイルです。）にある設定を読み込み、 `core.repositoryformatversion` が 0 になるように制御します。このフィールドについては、すぐに詳しく説明します。 <!-- We read its configuration in .git/config (it’s just an INI file) and control that core.repositoryformatversion is 0. More on that field in a moment. -->
+
+コンストラクターは省略可能なパラメーター `force` を取ります。このパラメーターは、これらのチェックを全て無効にします。後で作る `repo_create()` 関数がリポジトリを作るために `Repository` オブジェクトを使うためのものです。そのため、（まだ）無効なファイルシステム上の位置からでもリポジトリを作る方法が必要です。 <!-- The constructor takes an optional force which disables all check. That’s because the repo_create() function which we’ll create later uses a Repository object to create the repo. So we need a way to create repository even from (still) invalid filesystem locations. -->
+
+``` py
+class GitRepository(object):
+    """A git repository"""
+
+    worktree = None
+    gitdir = None
+    conf = None
+
+    def __init__(self, path, force=False):
+        self.worktree = path
+        self.gitdir = os.path.join(path, ".git")
+
+        if not (force or os.path.isdir(self.gitdir)):
+            raise Exception("Not a Git repository %s" % path)
+
+        # Read configuration file in .git/config
+        self.conf = configparser.ConfigParser()
+        cf = repo_file(self, "config")
+
+        if cf and os.path.exists(cf):
+                self.conf.read([cf])
+        elif not force:
+            raise Exception("Configuration file missing")
+
+        if not force:
+            vers = int(self.conf.get("core", "repositoryformatversion"))
+            if vers != 0:
+                raise Exception("Unsupported repositoryformatversion %s" % vers)
+```
+
+私達はリポジトリ内の**多く**のパスを操作することになります。これらのパスを計算したり、必要に応じて不足しているディレクトリ構造を作ったりするために、いくつかユーティリティ関数を作ると良いです。まずは一般的なパス構築関数です: <!-- We’re going to be manipulating lots of paths in repositories. We may as well create a few utility functions to compute those paths and create missing directory structures if needed. First, just a general path building function: -->
+
+``` py
+def repo_path(repo, *path):
+    """Compute path under repo's gitdir."""
+    return os.path.join(repo.gitdir, *path)
+```
+
+次の2つの関数 `repo_file()` と `repo_dir()` は、それぞれファイルまたはディレクトリのパスを返します。オプションによっては作成もします。これらの関数の違いは、ファイル版は最後のコンポーネントまでのディレクトリしか作成しないというところです。 <!-- The two next functions, repo_file() and repo_dir(), return and optionally create a path to a file or a directory, respectively. The difference between them is that the file version only creates directories up to the last component. -->
+
+``` py
+def repo_file(repo, *path, mkdir=False):
+    """Same as repo_path, but create dirname(*path) if absent.  For
+example, repo_file(r, \"refs\", \"remotes\", \"origin\", \"HEAD\") will create
+.git/refs/remotes/origin."""
+
+    if repo_dir(repo, *path[:-1], mkdir=mkdir):
+        return repo_path(repo, *path)
+
+def repo_dir(repo, *path, mkdir=False):
+    """Same as repo_path, but mkdir *path if absent if mkdir."""
+
+    path = repo_path(repo, *path)
+
+    if os.path.exists(path):
+        if (os.path.isdir(path)):
+            return path
+        else:
+            raise Exception("Not a directory %s" % path)
+
+    if mkdir:
+        os.makedirs(path)
+        return path
+    else:
+        return None
+```
+
+新しいリポジトリを**作成する**には、ディレクトリ（存在しない場合は作り、その他の場合は空であることを確認する。）から始め、次のパスを作成します: <!-- To create a new repository, we start with a directory (which we create if doesn’t already exist, or check for emptiness otherwise) and create the following paths: -->
+
+- `.git` は git ディレクトリ自身です。次を含みます: <!-- .git is the git directory itself, which contains: -->
+  - `.git/objects/` はオブジェクトストアです。[次の節で]()導入します。 <!-- .git/objects/ : the object store, which we’ll introduce in the next section. -->
+  - `.git/refs/` はリファレンスストアです。これから議論します。2つのサブディレクトリ `heads` と `tags` を含みます。 <!-- .git/refs/ the reference store, which we’ll discuss. It contains two subdirectories, heads and tags. -->
+  - `.git/HEAD` は現在の HEAD への参照です。（詳細は後ほど！） <!-- .git/HEAD, a reference to the current HEAD (more on that later!) -->
+  - `.git/config` はリポジトリの構成ファイルです。 <!-- .git/config, the repository’s configuration file. -->
+  - `.git/description` はリポジトリの概要ファイルです。 <!-- .git/description, the repository’s description file. -->
+
+``` py
+def repo_create(path):
+    """Create a new repository at path."""
+
+    repo = GitRepository(path, True)
+
+    # First, we make sure the path either doesn't exist or is an
+    # empty dir.
+
+    if os.path.exists(repo.worktree):
+        if not os.path.isdir(repo.worktree):
+            raise Exception ("%s is not a directory!" % path)
+        if os.listdir(repo.worktree):
+            raise Exception("%s is not empty!" % path)
+    else:
+        os.makedirs(repo.worktree)
+
+    assert(repo_dir(repo, "branches", mkdir=True))
+    assert(repo_dir(repo, "objects", mkdir=True))
+    assert(repo_dir(repo, "refs", "tags", mkdir=True))
+    assert(repo_dir(repo, "refs", "heads", mkdir=True))
+
+    # .git/description
+    with open(repo_file(repo, "description"), "w") as f:
+        f.write("Unnamed repository; edit this file 'description' to name the repository.\n")
+
+    # .git/HEAD
+    with open(repo_file(repo, "HEAD"), "w") as f:
+        f.write("ref: refs/heads/master\n")
+
+    with open(repo_file(repo, "config"), "w") as f:
+        config = repo_default_config()
+        config.write(f)
+
+    return repo
+```
+
+構成ファイルはとてもシンプルです。1つのセクション (`[core]`) と次の3つのフィールドを持つ INI-like ファイルです: <!-- The configuration file is very simple, it’s a INI-like file with a single section ([core]) and three fields: -->
+
+- `repositoryformatversion = 0`: gitdir フォーマットのバージョンです。 0 は初期フォーマットを意味し、 1 は拡張機能と同じです。 1 を超える場合、 git はパニックします。 wyag は 0 のみを受け入れます。 <!-- repositoryformatversion = 0: the version of the gitdir format. 0 means the initial format, 1 the same with extensions. If > 1, git will panic; wyag will only accept 0. -->
+- `filemode = false`: 作業ツリーでのファイルモードのトラッキングを無効にします。 <!-- filemode = false: disable tracking of file mode changes in the work tree. -->
+- `bare = false`: このリポジトリに作業ツリーがあるということを示します。 Git は省略可能な `worktree` キーをサポートします。このキーは、 `..` でない場合、作業ツリーの場所を示します。 wyag ではサポートしません。 <!-- bare = false: indicates that this repository has a worktree. Git supports an optional worktree key which indicates the location of the worktree, if not ..; wyag doesn’t. -->
+
+これは Python の configparser ライブラリを使って作ります: <!-- We create this file using Python’s configparser lib: -->
+
+``` py
+def repo_default_config():
+    ret = configparser.ConfigParser()
+
+    ret.add_section("core")
+    ret.set("core", "repositoryformatversion", "0")
+    ret.set("core", "filemode", "false")
+    ret.set("core", "bare", "false")
+
+    return ret
 ```
 
 ## 後書き <!-- Final words -->
