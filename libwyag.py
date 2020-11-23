@@ -152,3 +152,6 @@ argsp.add_argument("path",
                    nargs="?",
                    default=".",
                    help="Where to create the repository.")
+
+def cmd_init(args):
+    repo_create(args.path)
