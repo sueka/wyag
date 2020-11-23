@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:10:25">2020年11月23日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T06:43:23">2020年11月23日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -317,6 +317,43 @@ def repo_default_config():
 
     return ret
 ```
+
+### init コマンド <!-- The init command -->
+
+これでリポジトリを読み取ったり作ったりするコードが出来たので、 `wyag init` コマンドを作って、このコードをコマンドラインから使えるようにしましょう。 `wyag init` は、丁度 `git init` のように振る舞いますが、勿論、可能なカスタマイズはかなり少ないです。 `wyag init` の構文は: <!-- Now that we have code to read and create repositories, let’s make this code usable from the command line by creating the wyag init command. wyag init behaves just like git init — with much less possible customization, of course. The syntax of wyag init is going to be: -->
+
+```
+wyag init [path]
+```
+
+となります。 <!-- Now that we have code to read and create repositories, let’s make this code usable from the command line by creating the wyag init command. wyag init behaves just like git init — with much less possible customization, of course. The syntax of wyag init is going to be: -->
+
+完全なリポジトリ作成ロジックはすでにあります。コマンドを作るために必要なものは後2つだけです: <!-- We already have the complete repository creation logic. To create the command, we’re only going to need two more things: -->
+
+1.  コマンドの引数を処理するために argparse サブパーザーを作る必要があります。 <!-- We need to create an argparse subparser to handle our command’s argument. -->
+
+    ``` py
+    argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repository.")
+    ```
+
+    `init` の場合、省略可能な位置指定引数（リポジトリを初期化する場所のパス）が1つあります。デフォルトは `.` です: <!-- In the case of init, there’s a single, optional, positional argument: the path where to init the repo. It defaults to .: -->
+
+    ``` py
+    argsp.add_argument("path",
+                       metavar="directory",
+                       nargs="?",
+                       default=".",
+                       help="Where to create the repository.")
+    ```
+
+1.  argparse が返すオブジェクトから引数の値を読み取り、正しい値で実際の関数を呼び出す「ブリッジ」関数も必要です。 <!-- We also need a “bridge” function that will read argument values from the object returned by argparse and call the actual function with correct values. -->
+
+    ``` py
+    def cmd_init(args):
+        repo_create(args.path)
+    ```
+
+これで終わりです！　この手順を踏めば、どこにでも git リポジトリを `wyag init` できるようになるはずです。 <!-- And we’re done! If you’ve followed these steps, you should now be able to wayg init a git repository anywhere. -->
 
 ## 後書き <!-- Final words -->
 
