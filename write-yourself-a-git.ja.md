@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T17:51:59">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T18:04:35">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -581,6 +581,73 @@ def cmd_cat_file(args):
 def cat_file(repo, obj, fmt=None):
     obj = object_read(repo, object_find(repo, obj, fmt=fmt))
     sys.stdout.buffer.write(obj.serialize())
+```
+
+### hash-object コマンド<!-- The hash-object command -->
+
+`hash-object` は基本的には `cat-file` の反対です: ファイルを読み込み、オブジェクトとしてハッシュを計算し、（ -w フラグが渡された場合）リポジトリに保存するか、単にハッシュを印字するかします。 <!-- hash-object is basically the opposite of cat-file: it reads a file, computes its hash as an object, either storing it in the repository (if the -w flag is passed) or just printing its hash. -->
+
+`git hash-object` の基本的な構文はこのようなものです: <!-- The basic syntax of git hash-object looks like this: -->
+
+```
+git hash-object [-w] [-t TYPE] FILE
+```
+
+これは: <!-- Which converts to: -->
+
+``` py
+argsp = argsubparsers.add_parser(
+    "hash-object",
+    help="Compute object ID and optionally creates a blob from a file")
+
+argsp.add_argument("-t",
+                   metavar="type",
+                   dest="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   default="blob",
+                   help="Specify the type")
+
+argsp.add_argument("-w",
+                   dest="write",
+                   action="store_true",
+                   help="Actually write the object into the database")
+
+argsp.add_argument("path",
+                   help="Read object from <file>")
+```
+
+に変換されます。 <!-- Which converts to: -->
+
+実際の実装は非常にシンプルです。いつものように、小さなブリッジ関数を作ります: <!-- The actual implementation is very simple. As usual, we create a small bridge function: -->
+
+``` py
+def cmd_hash_object(args):
+    if args.write:
+        repo = GitRepository(".")
+    else:
+        repo = None
+
+    with open(args.path, "rb") as fd:
+        sha = object_hash(fd, args.type.encode(), repo)
+        print(sha)
+```
+
+そして、実際の実装です。引数 repo は省略可能です: <!-- and the actual implementation. The repo argument is optional: -->
+
+``` py
+def object_hash(fd, fmt, repo=None):
+    data = fd.read()
+
+    # Choose constructor depending on
+    # object type found in header.
+    if   fmt==b'commit' : obj=GitCommit(repo, data)
+    elif fmt==b'tree'   : obj=GitTree(repo, data)
+    elif fmt==b'tag'    : obj=GitTag(repo, data)
+    elif fmt==b'blob'   : obj=GitBlob(repo, data)
+    else:
+        raise Exception("Unknown type %s!" % fmt)
+
+    return object_write(obj, repo)
 ```
 
 ## 後書き <!-- Final words -->
