@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-23T07:45:13">2020年11月23日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T01:12:04">2020年11月24日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -383,6 +383,52 @@ def repo_find(path=".", required=True):
 ```
 
 これでリポジトリの完成です！ <!-- And we’re done with repositories! -->
+
+## オブジェクトの読み書き: hash-object と cat-file <!-- Reading and writing objects: hash-object and cat-file -->
+
+### オブジェクトって何？ <!-- What are objects? -->
+
+さて、リポジトリが出来たので、今度はその中に何かを入れるのが順当です。また、リポジトリは退屈でしたが、 Git 実装を書くというのは単に大量の `mkdir` を書けばよいというものではありません。**オブジェクト**の話をして、 `git hash-object` と `git cat-file` を実装しましょう。 <!-- Now that we have repositories, putting things inside them is in order. Also, repositories are boring, and writing a Git implementation shouldn’t be just a matter of writing a bunch of mkdir. Let’s talk about objects, and let’s implement git hash-object and git cat-file. -->
+
+これら2つのコマンドを知らない人も居るかもしれません。現に、日常の git ツールボックスには含まれていないし、非常に低レベルなもの（ git 用語でいう「配管 (plumbing) 」）です。これらのコマンドがすることは非常にシンプルです: `hash-object` は既存のファイルを git オブジェクトに変換し、 `cat-file` は既存の git オブジェクトを標準出力に印字します。 <!-- Maybe you don’t know these two commands — they’re not exactly part of an everyday git toolbox, and they’re actually quite low-level (“plumbing”, in git parlance). What they do is actually very simple: hash-object converts an existing file into a git object, and cat-file prints an existing git object to the standard output. -->
+
+では、**実のところ、 Git オブジェクトとは何なのでしょう？**　 Git は「内容アドレスファイルシステム」です 。つまり、通常のファイルシステムでは、ファイル名は恣意的であり、ファイルの内容と無関係であるのに対し、 Git が保存するファイル名は、その内容から数学的に導き出される、ということです。これには非常に重要な含意があります: 仮にテキストファイルが1バイト変わったら、その内部名も変わるということです。簡単に言えば、ファイルを*変更している*のではなく、別の場所に新しいファイルを作っているということです。オブジェクトとは正に git リポジトリ内のファイルのことであり、そのパスはその内容によって決定されます。 <!-- Now, what actually is a Git object? At its core, Git is a “content-addressed filesystem”. That means that unlike regular filesystems, where the name of a file is arbitrary and unrelated to that file’s contents, the names of files as stored by Git are mathematically derived from their contents. This has a very important implication: if a single byte of, say, a text file, changes, its internal name will change, too. To put it simply: you don’t modify a file, you create a new file in a different location. Objects are just that: files in the git repository, whose path is determined by their contents. -->
+
+---
+
+# Warning
+
+**Git は（本物の）キーバリューストアではない** <!-- Git is not (really) a key-value store -->
+
+あの素晴らしき [Pro Git](https://git-scm.com/book/id/v2/Git-Internals-Git-Objects) を含むいくつかのドキュメントが、 Git を「キーバリューストア」と呼んでいます。これは誤りではないですが、誤解を招くかもしれません。実際には、 Git よりも通常のファイルシステムの方がキーバリューストアにより近いです。 Git はデータからキーを計算するので、むしろ*バリューバリューストア*と呼ばれるべきものです。 <!-- Some documentation, including the excellent Pro Git, call Git a “key-value store”. This is not incorrect, but may be misleading. Regular filesystems are actually closer to a key-value store than Git is. Because it computes keys from data, Git should rather be called a value-value store. -->
+
+---
+
+Git はオブジェクトを使って非常に多くのものを保存します: まず第一に、バージョン管理している実際のファイル（たとえば、ソースコード）です。コミットもオブジェクトです。タグもです。いくつかの注目すべき例外（後で見ます！）を除いて、 Git では、ほとんど全てのものがオブジェクトとして保存されます。 <!-- Git uses objects to store quite a lot of things: first and foremost, the actual files it keeps in version control — source code, for example. Commit are objects, too, as well as tags. With a few notable exceptions (which we’ll see later!), almost everything, in Git, is stored as an object. -->
+
+パスはその内容の [SHA-1 ハッシュ](https://en.wikipedia.org/wiki/Cryptographic_hash_function)を計算することで計算されます。より正確には、 Git は、そのハッシュを小文字の16進文字列としてレンダリングし、2つの部分（最初の2文字と残り）に分けます。最初の2文字はディレクトリ名として使い、残りはファイル名として使います。（これは、多くのファイルシステムで、1つのディレクトリに過剰に多くのファイルがあることが嫌われ、クロールが低速になることがあるためです。 Git の方法では、256個の中間ディレクトリが作成できるので、ディレクトリあたりのファイル数は平均で256分の1になります。） <!-- The path is computed by calculating the SHA-1 hash of its contents. More precisely, Git renders the hash as a lowercase hexadecimal string, and splits it in two parts: the first two characters, and the rest. It uses the first part as a directory name, the rest as the file name (this is because most filesystems hate having too many files in a single directory and would slow down to a crawl. Git’s method creates 256 possible intermediate directories, hence dividing the average number of files per directory by 256) -->
+
+---
+
+# Note
+
+**ハッシュ関数って何？** <!-- What is a hash function? -->
+
+簡単に言えば、ハッシュ関数は一方向性のある数学関数の一種です: 値からハッシュを計算するのは簡単ですが、あるハッシュがどの値から生成されるかを計算する方法はありません。ハッシュ関数のごく単純な例は `strlen` 関数です。文字列の長さを計算するのは非常に簡単で、与えられた文字列の長さが変わることもありません（勿論、文字列自体が変わっていない場合！）が、その長さだけを与えられても、元の文字列を得ることはできません。*暗号学的*ハッシュ関数は、ある与えられたハッシュを生成する入力を計算することが実際には不可能なほどに難しいという性質を付け加えて、同じものをより一層複雑にしただけのものです。（ `strlen` では、 `strlen(i) == 12` となる入力 `i` を生成するには、単に12文字のランダムな文字を入力すればよいです。 SHA-1 のようなアルゴリズムでは、ずっと長く、実際には不可能なほど長い時間が掛かります。［原註: [SHA-1 で衝突が発見された](https://shattered.io/)ことを知っているかもしれません。実際には Git はもう SHA-1 を使っていません: SHA-1 ではなく、衝突することが知られている2つの PDF ファイル以外の全ての既知の入力に同じハッシュを適用する、[強化された変種](https://github.com/git/git/blob/26e47e261e969491ad4e3b6c298450c061749c9e/Documentation/technical/hash-function-transition.txt#L34-L36)を使っています。］ <!-- Simply put, a hash function is a kind of unidirectional mathematical function: it is easy to compute the hash of a value, but there’s no way to compute which value produced a hash. A very simple example of a hash function is the strlen function. It’s really easy to compute the length of a string, and the length of a given string will never change (unless the string itself changes, of course!) but it’s impossible to retrieve the original string, given only its length. Cryptographic hash functions are just a much more complex version of the same, with the added property that computing an input meant to produce a given hash is hard enough to be practically impossible. (With strlen, producing an input i with strlen(i) == 12, you just have to type twelve random characters. With algorithms such as SHA-1. it would take much, much longer — long enough to be practically impossible[footnote: You may know that collisions have been discovered in SHA-1. Git actually doesn’t use SHA-1 anymore: it uses a hardened variant which is not SHA, but which applies the same hash to every known input but the two PDF files known to collide.]. -->
+
+---
+
+オブジェクトストレージシステムの実装を始める前に、正確なストレージフォーマットを理解しなければなりません。オブジェクトは、そのタイプ（ `blob`, `commit`, `tag` または `tree` ）を指定するヘッダーで始まります。このヘッダーの後は、 ASCII スペース (0x20) 、 ASCII 数字でバイト単位のオブジェクトのサイズ、 null (0x00) （ナルバイト）、オブジェクトのコンテンツと続きます。 Wyag のリポジトリのあるコミットオブジェクトの最初の48バイトは、このようになっています: <!-- Before we start implementing the object storage system, we must understand their exact storage format. An object starts with a header that specifies its type: blob, commit, tag or tree. This header is followed by an ASCII space (0x20), then the size of the object in bytes as an ASCII number, then null (0x00) (the null byte), then the contents of the object. The first 48 bytes of a commit object in Wyag’s repo look like this: -->
+
+```
+00000000  63 6f 6d 6d 69 74 20 31  30 38 36 00 74 72 65 65  |commit 1086.tree|
+00000010  20 32 39 66 66 31 36 63  39 63 31 34 65 32 36 35  | 29ff16c9c14e265|
+00000020  32 62 32 32 66 38 62 37  38 62 62 30 38 61 35 61  |2b22f8b78bb08a5a|
+```
+
+最初の行には、タイプヘッダー、スペース (`0x20`) 、 ASCII でのサイズ (1086) 、およびナルセパレーター `0x00` があります。最初の行の最後の4バイトは、オブジェクトのコンテンツの始まりであり、「 tree 」という単語です。これについては、コミットについて話すときにさらに議論します。 <!-- In the first line, we see the type header, a space (0x20), the size in ASCII (1086) and the null separator 0x00. The last four bytes on the first line are the beginning of that object’s contents, the word “tree” — we’ll discuss that further when we’ll talk about commits. -->
+
+オブジェクト（ヘッダーとコンテンツ）は `zlib` で圧縮されて保存されます。 <!-- The objects (headers and contents) are stored compressed with zlib. -->
 
 ## 後書き <!-- Final words -->
 
