@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T17:40:17">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T17:51:59">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -545,6 +545,42 @@ class GitBlob(GitObject):
 
     def deserialize(self, data):
         self.blobdata = data
+```
+
+### cat-file コマンド <!-- The cat-file command -->
+
+これで `wyag cat-file` を作成できるようになりました。 `git cat-file` の基本的な構文は2つの位置指定引数だけです: タイプとオブジェクト識別子: <!-- With all that, we can now create wyag cat-file. The basic syntax of git cat-file is just two positional arguments: a type and an object identifier: -->
+
+```
+git cat-file TYPE OBJECT
+```
+
+サブパーザーは非常にシンプルです: <!-- The subparser is very simple: -->
+
+``` py
+argsp = argsubparsers.add_parser("cat-file",
+                                help="Provide content of repository objects")
+
+argsp.add_argument("type",
+                   metavar="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   help="Specify the type")
+
+argsp.add_argument("object",
+                   metavar="object",
+                   help="The object to display")
+```
+
+そして、これらの関数は何も説明する必要は無いでしょう。すでに書かれたロジックを呼び出すだけです: <!-- And the functions themselves shouldn’t need any explanation, they just call into already written logic: -->
+
+``` py
+def cmd_cat_file(args):
+    repo = repo_find()
+    cat_file(repo, args.object, fmt=args.type.encode())
+
+def cat_file(repo, obj, fmt=None):
+    obj = object_read(repo, object_find(repo, obj, fmt=fmt))
+    sys.stdout.buffer.write(obj.serialize())
 ```
 
 ## 後書き <!-- Final words -->
