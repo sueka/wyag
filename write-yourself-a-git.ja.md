@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T01:12:04">2020年11月24日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T15:29:26">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -429,6 +429,32 @@ Git はオブジェクトを使って非常に多くのものを保存します:
 最初の行には、タイプヘッダー、スペース (`0x20`) 、 ASCII でのサイズ (1086) 、およびナルセパレーター `0x00` があります。最初の行の最後の4バイトは、オブジェクトのコンテンツの始まりであり、「 tree 」という単語です。これについては、コミットについて話すときにさらに議論します。 <!-- In the first line, we see the type header, a space (0x20), the size in ASCII (1086) and the null separator 0x00. The last four bytes on the first line are the beginning of that object’s contents, the word “tree” — we’ll discuss that further when we’ll talk about commits. -->
 
 オブジェクト（ヘッダーとコンテンツ）は `zlib` で圧縮されて保存されます。 <!-- The objects (headers and contents) are stored compressed with zlib. -->
+
+### 総称的なオブジェクトのオブジェクト <!-- A generic object object -->
+
+オブジェクトには複数のタイプがありますが、これらは全て同一の保存・検索メカニズムと同一の一般的なヘッダーフォーマットを共有しています。様々なタイプのオブジェクトの詳細に飛び込む前に、共通の機能を抽象化しておく必要があります。最も簡単な方法は、2つの未実装メソッド（ `serialize()` と `deserialize()` ）を持つ、総称的な `GitObject` を作ることです。後ほど、この総称クラスをサブクラス化し、オブジェクトフォーマットごとに実際にこれらの関数を実装します。 <!-- Objects can be of multiple types, but they all share the same storage/retrieval mechanism and the same general header format. Before we dive into the details of various types of objects, we need to abstract over these common features. The easiest way is to create a generic GitObject with two unimplemented methods: serialize() and deserialize(). Later, we’ll subclass this generic class, actually implementing these functions for each object format. -->
+
+``` py
+class GitObject (object):
+
+    repo = None
+
+    def __init__(self, repo, data=None):
+        self.repo=repo
+
+        if data != None:
+            self.deserialize(data)
+
+    def serialize(self):
+        """This function MUST be implemented by subclasses.
+
+It must read the object's contents from self.data, a byte string, and do
+whatever it takes to convert it into a meaningful representation.  What exactly that means depend on each subclass."""
+        raise Exception("Unimplemented!")
+
+    def deserialize(self, data):
+        raise Exception("Unimplemented!")
+```
 
 ## 後書き <!-- Final words -->
 
