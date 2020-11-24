@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T17:15:33">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T17:40:17">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -529,6 +529,22 @@ def object_write(obj, actually_write=True):
             f.write(zlib.compress(result))
 
     return sha
+```
+
+### blob の扱い
+<!-- Working with blobs -->
+
+blob は、実際のフォーマットが無いため、4つの Git オブジェクトタイプの中で最もシンプルです。 blob はユーザーのコンテンツです: git に置かれている全てのファイルは blob として保存されます。 blob は、基本的なオブジェクトストレージメカニズムを超える構文や制約が無い（単なる不特定多数のデータです。）ので、簡単に操作できます。 `GitBlob` クラスの作成は些細なことです。 `serialize` 関数と `deserialize` 関数は、入力を変更せずに保存したり返したりするだけです。 <!-- Of the four Git object types, blobs are the simplest, because they have no actual format. Blobs are user content: every file you put in git is stored as a blob. That make them easy to manipulate, because they have no actual syntax or constraints beyond the basic object storage mechanism: they’re just unspecified data. Creating a GitBlob class is thus trivial, the serialize and deserialize functions just have to store and return their input unmodified. -->
+
+``` py
+class GitBlob(GitObject):
+    fmt=b'blob'
+
+    def serialize(self):
+        return self.blobdata
+
+    def deserialize(self, data):
+        self.blobdata = data
 ```
 
 ## 後書き <!-- Final words -->
