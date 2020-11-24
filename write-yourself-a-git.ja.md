@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T18:04:35">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T19:02:42">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -648,6 +648,24 @@ def object_hash(fd, fmt, repo=None):
         raise Exception("Unknown type %s!" % fmt)
 
     return object_write(obj, repo)
+```
+
+### packfile はどう？ <!-- What about packfiles? -->
+
+今実装したのは「緩いオブジェクト」と呼ばれるものです。 Git には packfile と呼ばれる2つ目のオブジェクトストレージメカニズムがあります。 packfile は、緩いオブジェクトと比べて効率的ですが、より複雑でもあります。そして、 `wyag` では実装する価値がありません。簡単に言えば、 packfile は（ `tar` のような）緩いオブジェクトを集めたものでありながら、一部はデルタとして（別のオブジェクトの変形として）保存されているようなものです。 packfile は wyag がサポートするには複雑すぎます。 <!-- What we’ve just implemented is called “loose objects”. Git has a second object storage mechanism called packfiles. Packfiles are much more efficient, but also much more complex, than loose objects. And aren’t worth implementing in wyag. Simply put, a packfile is a compilation of loose objects (like a tar) but some are stored as deltas (as a transformation of another object). Packfiles are way too complex to be supported by wyag. -->
+
+packfile は `.git/objects/pack/` に保存されます。拡張子は `.pack `であり、拡張子が `.idx` である同名のインデックスファイルが付属しています。 packfile を緩いオブジェクトフォーマットに変換したい（たとえば、既存のリポジトリで `wyag` を使って遊びたい）場合、次のような解決策があります。 <!-- The packfile is stored in .git/objects/pack/. It has a .pack extension, and is accompanied by an index file of the same name with the .idx extension. Should you want to convert a packfile to loose objects format (to play with wyag on an existing repo, for example), here’s the solution. -->
+
+まず、 packfile を gitdir の外に*移動させ*ます。コピーするぐらいなら移動させるべきです。 <!-- First, move the packfile outside the gitdir. Copying it, you have to move it. -->
+
+``` sh
+mv .git/objects/pack/pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack .
+```
+
+`.idx` は無視できます。それから、ワークツリーから、それを `cat` して、その結果を `git unpack-objects` にパイプします: <!-- You can ignore the .idx. Then, from the worktree, just cat it and pipe the result to git unpack-objects: -->
+
+``` sh
+cat pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack | git unpack-objects
 ```
 
 ## 後書き <!-- Final words -->
