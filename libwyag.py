@@ -226,3 +226,6 @@ def object_read(repo, sha):
 
         # Call constructor and return object
         return c(repo, raw[y+1:])
+
+def object_find(repo, name, fmt=None, follow=True):
+    return name
