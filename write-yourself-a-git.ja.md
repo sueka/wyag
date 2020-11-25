@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T19:02:42">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T06:34:04">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -43,7 +43,7 @@ Git を実装することで、その基本を全て赤裸々に曝け出させ�
 
 ---
 
-# Warning
+**Warning**
 
 **Windows ユーザーへの注意** <!-- Note for Windows users -->
 
@@ -396,7 +396,7 @@ def repo_find(path=".", required=True):
 
 ---
 
-# Warning
+**Warning**
 
 **Git は（本物の）キーバリューストアではない** <!-- Git is not (really) a key-value store -->
 
@@ -410,7 +410,7 @@ Git はオブジェクトを使って非常に多くのものを保存します:
 
 ---
 
-# Note
+**Note**
 
 **ハッシュ関数って何？** <!-- What is a hash function? -->
 
