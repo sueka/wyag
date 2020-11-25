@@ -368,3 +368,23 @@ def kvlm_parse(raw, start=0, dct=None):
         dct[key]=value
 
     return kvlm_parse(raw, start=end+1, dct=dct)
+
+def kvlm_serialize(kvlm):
+    ret = b''
+
+    # Output fields
+    for k in kvlm.keys():
+        # Skip the message itself
+        if k == b'': continue
+        val = kvlm[k]
+        # Normalize to a list
+        if type(val) != list:
+            val = [ val ]
+
+        for v in val:
+            ret += k + b' ' + (v.replace(b'\n', b'\n ')) + b'\n'
+
+    # Append message
+    ret += b'\n' + kvlm[b'']
+
+    return ret
