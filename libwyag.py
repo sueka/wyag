@@ -397,3 +397,9 @@ class GitCommit(GitObject):
 
     def serialize(self):
         return kvlm_serialize(self.kvlm)
+
+argsp = argsubparsers.add_parser("log", help="Display history of a given commit.")
+argsp.add_argument("commit",
+                   default="HEAD",
+                   nargs="?",
+                   help="Commit to start at.")
