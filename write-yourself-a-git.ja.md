@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:33:17">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:42:02">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -785,6 +785,21 @@ def kvlm_serialize(kvlm):
     ret += b'\n' + kvlm[b'']
 
     return ret
+```
+
+### コミットオブジェクト <!-- The Commit object -->
+
+パーザーが出来たので、 `GitCommit` クラスが作れます: <!-- Now we have the parser, we can create the GitCommit class: -->
+
+``` py
+class GitCommit(GitObject):
+    fmt=b'commit'
+
+    def deserialize(self, data):
+        self.kvlm = kvlm_parse(data)
+
+    def serialize(self):
+        return kvlm_serialize(self.kvlm)
 ```
 
 ## 後書き <!-- Final words -->
