@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T06:34:04">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:33:17">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -666,6 +666,125 @@ mv .git/objects/pack/pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack .
 
 ``` sh
 cat pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack | git unpack-objects
+```
+
+## コミット履歴の読み取り: log <!-- Reading commit history: log -->
+
+### コミットのパーズ <!-- Parsing commits -->
+
+オブジェクトを読み書きできるようになったので、コミットについて考えましょう。コミットオブジェクト（非圧縮、ヘッダーを除く）はこのような見た目をしています: <!-- Now that we can read and write objects, we should consider commits. A commit object (uncompressed, without headers) looks like this: -->
+
+```
+tree 29ff16c9c14e2652b22f8b78bb08a5a07930c147
+parent 206941306e8a8af65b66eaaaea388a7ae24d49a0
+author Thibault Polge <thibault@thb.lt> 1527025023 +0200
+committer Thibault Polge <thibault@thb.lt> 1527025044 +0200
+gpgsig -----BEGIN PGP SIGNATURE-----
+
+ iQIzBAABCAAdFiEExwXquOM8bWb4Q2zVGxM2FxoLkGQFAlsEjZQACgkQGxM2FxoL
+ kGQdcBAAqPP+ln4nGDd2gETXjvOpOxLzIMEw4A9gU6CzWzm+oB8mEIKyaH0UFIPh
+ rNUZ1j7/ZGFNeBDtT55LPdPIQw4KKlcf6kC8MPWP3qSu3xHqx12C5zyai2duFZUU
+ wqOt9iCFCscFQYqKs3xsHI+ncQb+PGjVZA8+jPw7nrPIkeSXQV2aZb1E68wa2YIL
+ 3eYgTUKz34cB6tAq9YwHnZpyPx8UJCZGkshpJmgtZ3mCbtQaO17LoihnqPn4UOMr
+ V75R/7FjSuPLS8NaZF4wfi52btXMSxO/u7GuoJkzJscP3p4qtwe6Rl9dc1XC8P7k
+ NIbGZ5Yg5cEPcfmhgXFOhQZkD0yxcJqBUcoFpnp2vu5XJl2E5I/quIyVxUXi6O6c
+ /obspcvace4wy8uO0bdVhc4nJ+Rla4InVSJaUaBeiHTW8kReSFYyMmDCzLjGIu1q
+ doU61OM3Zv1ptsLu3gUE6GU27iWYj2RWN3e3HE4Sbd89IFwLXNdSuM0ifDLZk7AQ
+ WBhRhipCCgZhkj9g2NEk7jRVslti1NdN5zoQLaJNqSwO1MtxTmJ15Ksk3QP6kfLB
+ Q52UWybBzpaP9HEd4XnR+HuQ4k2K0ns2KgNImsNvIyFwbpMUyUWLMPimaV1DWUXo
+ 5SBjDB/V/W2JBFR+XKHFJeFwYhj7DD/ocsGr4ZMx/lgc8rjIBkI=
+ =lgTX
+ -----END PGP SIGNATURE-----
+
+Create first draft
+```
+
+このフォーマットは [RFC 2822](https://www.ietf.org/rfc/rfc2822.txt) で定義されているメールメッセージの簡略版です。一連のキーバリューペアで始まり、コミットメッセージで終わります。キーとバリューの区切り文字にはスペースを使い、コミットメッセージは複数行に跨る可能性があります。値は複数行に跨ることができ、続く行はスペースで始まります。パーザーはこのスペースを取り除かなければなりません。 <!-- The format is a simplified version of mail messages, as specified in RFC 2822. It begins with a series of key-value pairs, with space as the key/value separator, and ends with the commit message, that may span over multiple lines. Values may continue over multiple lines, subsequent lines start with a space which the parser must drop. -->
+
+これらのフィールドを見てみましょう: <!-- Let’s have a look at those fields: -->
+
+- `tree` は、ツリーオブジェクトへの参照であり、すぐ後で見ることになるオブジェクトタイプです。ツリーは、ブロブの ID をファイルシステム上の位置に割り当て、作業ツリーの状態を記述します。簡単に言えば、コミットの実際のコンテンツ（ファイルとその行き先）です。 <!-- tree is a reference to a tree object, a type of object that we’ll see soon. A tree maps blobs IDs to filesystem locations, and describes a state of the work tree. Put simply, it is the actual content of the commit: files, and where they go. -->
+- `parent` はこのコミットの親コミットへの参照です。このフィールドは繰り返されることもあります: たとえばマージコミットには複数の親があります。存在しないこともあります: リポジトリの最初のコミットには明らかに親がありません。 <!-- parent is a reference to the parent of this commit. It may be repeated: merge commits, for example, have multiple parents. It may also be absent: the very first commit in a repository obviously doesn’t have a parent. -->
+- コミットの作者がコミットできる人であるとは限らないため、 `author` と `committer` は分けられています。（ GitHub ユーザーにとっては明らかでないかもしれませんが、多くのプロジェクトで電子メール経由で Git を実行しています。） <!-- author and committer are separate, because the author of a commit is not necessarily the person who can commit it (This may not be obvious for GitHub users, but a lot of projects do Git through e-mail) -->
+- `gpgsig` はこのオブジェクトの PGP 署名です。 <!-- gpgsig is the PGP signature of this object. -->
+
+このフォーマットのシンプルなパーザーを書くところから始めます。コードは明白です。これから作ろうとしている関数の名前 `kvlm_parse()` は紛らわしいかもしれません: タグが全く同じフォーマットなので、この関数は両方のオブジェクトタイプに使うため、 `commit_parse()` という名前ではありません。私は KVLM を「メッセージ付きのキーバリューリスト (Key-Value List with Message) 」という意味で使っています。 <!-- We’ll start by writing a simple parser for the format. The code is obvious. The name of the function we’re about to create, kvlm_parse(), may be confusing: it isn’t called commit_parse() because tags have the very same format, so we’ll use it for both objects types. I use KVLM to mean “Key-Value List with Message”. -->
+
+``` py
+def kvlm_parse(raw, start=0, dct=None):
+    if not dct:
+        dct = collections.OrderedDict()
+        # You CANNOT declare the argument as dct=OrderedDict() or all
+        # call to the functions will endlessly grow the same dict.
+
+    # We search for the next space and the next newline.
+    spc = raw.find(b' ', start)
+    nl = raw.find(b'\n', start)
+
+    # If space appears before newline, we have a keyword.
+
+    # Base case
+    # =========
+    # If newline appears first (or there's no space at all, in which
+    # case find returns -1), we assume a blank line.  A blank line
+    # means the remainder of the data is the message.
+    if (spc < 0) or (nl < spc):
+        assert(nl == start)
+        dct[b''] = raw[start+1:]
+        return dct
+
+    # Recursive case
+    # ==============
+    # we read a key-value pair and recurse for the next.
+    key = raw[start:spc]
+
+    # Find the end of the value.  Continuation lines begin with a
+    # space, so we loop until we find a "\n" not followed by a space.
+    end = start
+    while True:
+        end = raw.find(b'\n', end+1)
+        if raw[end+1] != ord(' '): break
+
+    # Grab the value
+    # Also, drop the leading space on continuation lines
+    value = raw[spc+1:end].replace(b'\n ', b'\n')
+
+    # Don't overwrite existing data contents
+    if key in dct:
+        if type(dct[key]) == list:
+            dct[key].append(value)
+        else:
+            dct[key] = [ dct[key], value ]
+    else:
+        dct[key]=value
+
+    return kvlm_parse(raw, start=end+1, dct=dct)
+```
+
+ここで `OrderedDict` を使っているのは、私達が実装した `cat-file` はコミットオブジェクトをパーズしてからシリアライズしなおすことで印字するため、定義された順序と全く同じ順序のフィールドが必要だからです。また、 Git ではコミットやタグに現れるキーの順序も重要なようです。 <!-- We use an OrderedDict here because cat-file, as we’ve implemented it, will print a commit object by parsing it and re-serializing it, so we need fields to be in the exact same order they were defined. Also, in Git, the order keys appear in commit and tag object seem to matter. -->
+
+似たようなオブジェクトを書く必要があるので、 `kvlm_serialize()` をツールキットに追加しましょう。 <!-- We’re going to need to write similar objects, so let’s add a kvlm_serialize() function to our toolkit. -->
+
+``` py
+def kvlm_serialize(kvlm):
+    ret = b''
+
+    # Output fields
+    for k in kvlm.keys():
+        # Skip the message itself
+        if k == b'': continue
+        val = kvlm[k]
+        # Normalize to a list
+        if type(val) != list:
+            val = [ val ]
+
+        for v in val:
+            ret += k + b' ' + (v.replace(b'\n', b'\n ')) + b'\n'
+
+    # Append message
+    ret += b'\n' + kvlm[b'']
+
+    return ret
 ```
 
 ## 後書き <!-- Final words -->
