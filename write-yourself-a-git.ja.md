@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T15:29:26">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-24T16:17:17">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -406,7 +406,7 @@ def repo_find(path=".", required=True):
 
 Git はオブジェクトを使って非常に多くのものを保存します: まず第一に、バージョン管理している実際のファイル（たとえば、ソースコード）です。コミットもオブジェクトです。タグもです。いくつかの注目すべき例外（後で見ます！）を除いて、 Git では、ほとんど全てのものがオブジェクトとして保存されます。 <!-- Git uses objects to store quite a lot of things: first and foremost, the actual files it keeps in version control — source code, for example. Commit are objects, too, as well as tags. With a few notable exceptions (which we’ll see later!), almost everything, in Git, is stored as an object. -->
 
-パスはその内容の [SHA-1 ハッシュ](https://en.wikipedia.org/wiki/Cryptographic_hash_function)を計算することで計算されます。より正確には、 Git は、そのハッシュを小文字の16進文字列としてレンダリングし、2つの部分（最初の2文字と残り）に分けます。最初の2文字はディレクトリ名として使い、残りはファイル名として使います。（これは、多くのファイルシステムで、1つのディレクトリに過剰に多くのファイルがあることが嫌われ、クロールが低速になることがあるためです。 Git の方法では、256個の中間ディレクトリが作成できるので、ディレクトリあたりのファイル数は平均で256分の1になります。） <!-- The path is computed by calculating the SHA-1 hash of its contents. More precisely, Git renders the hash as a lowercase hexadecimal string, and splits it in two parts: the first two characters, and the rest. It uses the first part as a directory name, the rest as the file name (this is because most filesystems hate having too many files in a single directory and would slow down to a crawl. Git’s method creates 256 possible intermediate directories, hence dividing the average number of files per directory by 256) -->
+パスはその内容の [SHA-1 ハッシュ](https://en.wikipedia.org/wiki/Cryptographic_hash_function)を計算することで計算されます。より正確には、 Git は、そのハッシュを小文字の16進文字列としてレンダリングし、2つの部分（最初の2文字と残り）に分けます。最初の2文字はディレクトリ名として使い、残りはファイル名として使います。（これは、多くのファイルシステムで、1つのディレクトリに過剰に多くのファイルがあることが嫌われていて、クロールが低速になることがあるためです。 Git の方法では、256個の中間ディレクトリが作成できるので、ディレクトリあたりのファイル数は平均で256分の1になります。） <!-- The path is computed by calculating the SHA-1 hash of its contents. More precisely, Git renders the hash as a lowercase hexadecimal string, and splits it in two parts: the first two characters, and the rest. It uses the first part as a directory name, the rest as the file name (this is because most filesystems hate having too many files in a single directory and would slow down to a crawl. Git’s method creates 256 possible intermediate directories, hence dividing the average number of files per directory by 256) -->
 
 ---
 
@@ -414,7 +414,7 @@ Git はオブジェクトを使って非常に多くのものを保存します:
 
 **ハッシュ関数って何？** <!-- What is a hash function? -->
 
-簡単に言えば、ハッシュ関数は一方向性のある数学関数の一種です: 値からハッシュを計算するのは簡単ですが、あるハッシュがどの値から生成されるかを計算する方法はありません。ハッシュ関数のごく単純な例は `strlen` 関数です。文字列の長さを計算するのは非常に簡単で、与えられた文字列の長さが変わることもありません（勿論、文字列自体が変わっていない場合！）が、その長さだけを与えられても、元の文字列を得ることはできません。*暗号学的*ハッシュ関数は、ある与えられたハッシュを生成する入力を計算することが実際には不可能なほどに難しいという性質を付け加えて、同じものをより一層複雑にしただけのものです。（ `strlen` では、 `strlen(i) == 12` となる入力 `i` を生成するには、単に12文字のランダムな文字を入力すればよいです。 SHA-1 のようなアルゴリズムでは、ずっと長く、実際には不可能なほど長い時間が掛かります。［原註: [SHA-1 で衝突が発見された](https://shattered.io/)ことを知っているかもしれません。実際には Git はもう SHA-1 を使っていません: SHA-1 ではなく、衝突することが知られている2つの PDF ファイル以外の全ての既知の入力に同じハッシュを適用する、[強化された変種](https://github.com/git/git/blob/26e47e261e969491ad4e3b6c298450c061749c9e/Documentation/technical/hash-function-transition.txt#L34-L36)を使っています。］ <!-- Simply put, a hash function is a kind of unidirectional mathematical function: it is easy to compute the hash of a value, but there’s no way to compute which value produced a hash. A very simple example of a hash function is the strlen function. It’s really easy to compute the length of a string, and the length of a given string will never change (unless the string itself changes, of course!) but it’s impossible to retrieve the original string, given only its length. Cryptographic hash functions are just a much more complex version of the same, with the added property that computing an input meant to produce a given hash is hard enough to be practically impossible. (With strlen, producing an input i with strlen(i) == 12, you just have to type twelve random characters. With algorithms such as SHA-1. it would take much, much longer — long enough to be practically impossible[footnote: You may know that collisions have been discovered in SHA-1. Git actually doesn’t use SHA-1 anymore: it uses a hardened variant which is not SHA, but which applies the same hash to every known input but the two PDF files known to collide.]. -->
+簡単に言えば、ハッシュ関数は一方向性のある数学関数の一種です: 値からハッシュを計算するのは簡単ですが、あるハッシュがどの値から生成されるかを計算する方法はありません。ハッシュ関数のごく単純な例は `strlen` 関数です。文字列の長さを計算するのは非常に簡単で、与えられた文字列の長さが変わることもありません（勿論、文字列自体が変わっていない場合！）が、その長さだけを与えられても、元の文字列を得ることはできません。*暗号学的*ハッシュ関数は、ある与えられたハッシュを生成する入力を計算することが実際には不可能なほどに難しいという性質を付け加えて、同じものをさらに複雑にしただけのものです。（ `strlen` では、 `strlen(i) == 12` となる入力 `i` を生成するには、単に12文字のランダムな文字を入力すればよいです。 SHA-1 のようなアルゴリズムでは、ずっと長く、実際には不可能なほど長い時間が掛かります。［原註: [SHA-1 で衝突が発見された](https://shattered.io/)ことを知っているかもしれません。実際には Git はもう SHA-1 を使っていません: SHA-1 ではなく、衝突することが知られている2つの PDF ファイル以外の全ての既知の入力に同じハッシュを適用する、[強化された変種](https://github.com/git/git/blob/26e47e261e969491ad4e3b6c298450c061749c9e/Documentation/technical/hash-function-transition.txt#L34-L36)を使っています。］ <!-- Simply put, a hash function is a kind of unidirectional mathematical function: it is easy to compute the hash of a value, but there’s no way to compute which value produced a hash. A very simple example of a hash function is the strlen function. It’s really easy to compute the length of a string, and the length of a given string will never change (unless the string itself changes, of course!) but it’s impossible to retrieve the original string, given only its length. Cryptographic hash functions are just a much more complex version of the same, with the added property that computing an input meant to produce a given hash is hard enough to be practically impossible. (With strlen, producing an input i with strlen(i) == 12, you just have to type twelve random characters. With algorithms such as SHA-1. it would take much, much longer — long enough to be practically impossible[footnote: You may know that collisions have been discovered in SHA-1. Git actually doesn’t use SHA-1 anymore: it uses a hardened variant which is not SHA, but which applies the same hash to every known input but the two PDF files known to collide.]. -->
 
 ---
 
@@ -455,6 +455,57 @@ whatever it takes to convert it into a meaningful representation.  What exactly 
     def deserialize(self, data):
         raise Exception("Unimplemented!")
 ```
+
+### オブジェクトの読み込み <!-- Reading objects -->
+
+オブジェクトを読み込むには、そのハッシュを知る必要があります。そして、このハッシュからパスを（上で説明した公式（最初の2文字、それからディレクトリ区切り文字 `/` 、それから残りの部分）で）計算し、 gitdir の「 objects 」ディレクトリの中でそれを探します。つまり、 `e673d1b7eaa0aa01b5bc2442d570a765bdaae751` へのパスは `.git/objects/e6/73d1b7eaa0aa01b5bc2442d570a765bdaae751` です。 <!-- To read an object, we need to know its hash. We then compute its path from this hash (with the formula explained above: first two characters, then a directory delimiter /, then the remaining part) and look it up inside of the “objects” directory in the gitdir. That is, the path to e673d1b7eaa0aa01b5bc2442d570a765bdaae751 is .git/objects/e6/73d1b7eaa0aa01b5bc2442d570a765bdaae751. -->
+
+そして、そのファイルをバイナリファイルとして読み込み、 `zlib` を使って展開します。 <!-- We then read that file as a binary file, and decompress it using zlib. -->
+
+展開されたデータから2つのヘッダーコンポーネントを抜き出します: オブジェクトタイプとサイズです。タイプから実際に使うクラスを決定します。サイズは Python の整数に変換し、一致するかどうかを確認します。 <!-- From the decompressed data, we extract the two header components: the object type and its size. From the type, we determine the actual class to use. We convert the size to a Python integer, and check if it matches. -->
+
+全て終わったら、そのオブジェクトフォーマットに適したコンストラクターを呼び出すだけです。 <!-- When all is done, we just call the correct constructor for that object’s format. -->
+
+``` py
+def object_read(repo, sha):
+    """Read object object_id from Git repository repo.  Return a
+    GitObject whose exact type depends on the object."""
+
+    path = repo_file(repo, "objects", sha[0:2], sha[2:])
+
+    with open (path, "rb") as f:
+        raw = zlib.decompress(f.read())
+
+        # Read object type
+        x = raw.find(b' ')
+        fmt = raw[0:x]
+
+        # Read and validate object size
+        y = raw.find(b'\x00', x)
+        size = int(raw[x:y].decode("ascii"))
+        if size != len(raw)-y-1:
+            raise Exception("Malformed object {0}: bad length".format(sha))
+
+        # Pick constructor
+        if   fmt==b'commit' : c=GitCommit
+        elif fmt==b'tree'   : c=GitTree
+        elif fmt==b'tag'    : c=GitTag
+        elif fmt==b'blob'   : c=GitBlob
+        else:
+            raise Exception("Unknown type %s for object %s".format(fmt.decode("ascii"), sha))
+
+        # Call constructor and return object
+        return c(repo, raw[y+1:])
+```
+
+まだ `object_find` 関数は導入していません。実のところ、これはプレースホルダーであり、このようなものです: <!-- We haven’t introduced the object_find function yet. It’s actually a placeholder, and looks like this: -->
+
+``` py
+def object_find(repo, name, fmt=None, follow=True):
+    return name
+```
+
+この奇妙で小さな関数がある理由は、 Git にはオブジェクトを参照する方法が*たくさん*あるからです: 完全なハッシュ、短いハッシュ、タグ……。 `object_find()` が私達の名前解決関数となります。[後で]()実装するというだけで、これは一時的なプレースホルダーです。つまり、本物を実装するまで、オブジェクトを参照する方法は完全なハッシュによる方法しか無いということです。 <!-- The reason for this strange small function is that Git has a lot of ways to refer to objects: full hash, short hash, tags… object_find() will be our name resolution function. We’ll only implement it later, so this is a temporary placeholder. This means that until we implement the real thing, the only way we can refer to an object will be by its full hash. -->
 
 ## 後書き <!-- Final words -->
 
