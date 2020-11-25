@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:51:18">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T23:55:21">2020年11月26日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -852,6 +852,44 @@ def log_graphviz(repo, sha, seen):
 wyag log e03158242ecab460f31b0d6ae1642880577ccbe8 > log.dot
 dot -O -Tpdf log.dot
 ```
+
+### コミットの分析 <!-- Anatomy of a commit -->
+
+ここで、いくつかのことに気付いたかもしれません。 <!-- You may have noticed a few things right now. -->
+
+まず第一に、私達はコミットを弄って、コミットオブジェクトをざっと見て回って、コミット履歴のグラフを構築してきましたが、ワークツリー内の単一のファイルや、ブロブには一度も触れていませんでした。*コミットの内容について考えずに*、コミットに多くのことを行ってきました。これは重要です: ワークツリーの内容はコミットの一部でしかありません。しかし、コミットは全てのもの（内容、作者、そして親もです。）から成ります。コミットの ID （ SHA-1 ハッシュ）がコミットオブジェクト全体から計算されるということを覚えていれば、コミットは不変であるということの意味が分かるでしょう: 作者、親コミット、あるいは1つのファイルを変更する場合、実際には新しく、異なったオブジェクトを作っています。全てのコミットは、最初のコミットに至るまで、場所と、リポジトリ全体との関係に縛り付けられています。言い換えれば、与えられたコミット ID は、ファイルの内容を識別するだけではなく、そのコミットを履歴全体とリポジトリ全体に縛り付けもするということです。 <!-- First and foremost, we’ve been playing with commits, browsing and walking through commit objects, building a graph of commit history, without ever touching a single file in the worktree or a blob. We’ve done a lot with commits without considering their contents. This is important: work tree contents are just a part of a commit. But a commit is made of everything: its contents, its authors, and also its parents. If you remember that the ID (the SHA-1 hash) of a commit is computed from the whole commit object, you’ll understand what it means that commits are immutable: if you change the author, the parent commit or a single file, you’ve actually created a new, different object. Each and every commit is bound to its place and its relationship to the whole repository up to the very first commit. To put it otherwise, a given commit ID not only identifies some file contents, but it also binds the commit to its whole history and to the whole repository. -->
+
+コミットの視点から見ると時間が逆行しているということにも注目する価値があります: 私達は、午後の気晴らしとしての慎ましやかな出発から、数行のコードで始まり、いくつかの初期コミットがあって、そして現在の状態（数百万行のコード、数十人の貢献者、その他）まで進歩するプロジェクトの歴史について考えることに慣れています。しかし、各コミットは未来を全く認識しておらず、過去のみにリンクしています。コミットには「記憶」はありますが、予感はありません。 <!-- It’s also worth noting that from the point of view of a commit, time runs backwards: we’re used to considering the history of a project from its humble beginnings as an evening distraction, starting with a few lines of code, some initial commits, and progressing to its present state (millions of lines of code, dozens of contributors, whatever). But each commit is completely unaware of its future, it’s only linked to the past. Commits have “memory”, but no premonition. -->
+
+---
+
+**Note**
+
+テリー・プラチェットのディスクワールドでは、トロールは、自分達が未来から過去に向かって進んでいると信じています。その信念の背後にある論法は、歩くときに見えるものは*目の前*にあるものであるというものです。時間の中で知覚しうるものは過去だけであり、それは記憶しているからです。したがって、それはあなたが向かっている場所です。 Git はディスクワールドのトロールによって書かれたものです。 <!-- In Terry Pratchett’s Discworld, trolls believe they progress in time from the future to the past. The reasoning behind that belief is that when you walk, what you can see is what’s ahead of you. Of time, all you can perceive is the past, because you remember; hence it’s where you’re headed. Git was written by a Discworld troll. -->
+
+---
+
+では、何がコミットを作るのでしょうか？　要約すると: <!-- So what makes a commit? To sum it up: -->
+
+- ツリーオブジェクト（これから議論します。すなわち、ワークツリー、ファイル、およびディレクトリの内容です。） <!-- A tree object, which we’ll discuss now, that is, the contents of a worktree, files and directories; -->
+- 0個または1個以上の親 <!-- Zero, one or more parents; -->
+- 作者の ID （名前と電子メールアドレス） <!-- An author identity (name and email); -->
+- コミッターの ID （名前と電子メールアドレス） <!-- A committer identity (name and email); -->
+- 省略可能な PGP 署名 <!-- An optional PGP signature -->
+- メッセージ <!-- A message; -->
+
+この全体が SHA-1 識別子にハッシュされます。 <!-- All this hashed together in a SHA-1 identifier. -->
+
+---
+
+**Note**
+
+**待った、それは Git をブロックチェーンにするのでは？**
+<!-- Wait, does that make Git a blockchain? -->
+
+暗号通貨のせいで、最近はブロックチェーンが誇大広告になっています。そう、*ある意味では* Git はブロックチェーンです: Git は、各要素がその構造の履歴全体に関連付けられていることを保証する方法で、暗号学的手段によって結び付けられたブロック（コミット）の列です。ですが、この比較を真剣に考えすぎないでください。 GitCoin は必要ありません。本当に。 <!-- Because of cryptocurrencies, blockchains are all the hype these days. And yes, in a way, Git is a blockchain: it’s a sequence of blocks (commits) tied together by cryptographic means in a way that guarantee that each single element is associated to the whole history of the structure. Don’t take the comparison too seriously, though: we don’t need a GitCoin. Really, we don’t. -->
+
+---
 
 ## 後書き <!-- Final words -->
 
