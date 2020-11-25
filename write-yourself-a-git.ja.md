@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:42:02">2020年11月25日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T10:51:18">2020年11月25日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -800,6 +800,57 @@ class GitCommit(GitObject):
 
     def serialize(self):
         return kvlm_serialize(self.kvlm)
+```
+
+### log コマンド <!-- The log command -->
+
+Git が提供するものよりもずっとシンプルなバージョンの `log` を実装します。最も重要なことは、ログの表現を*全く*扱わないということです。代わりに、 Graphviz データをダンプし、ユーザーが `dot` を使って実際のログをレンダリングできるようにします。 <!-- We’ll implement a much, much simpler version of log than what Git provides. Most importantly, we won’t deal with representing the log at all. Instead, we’ll dump Graphviz data and let the user use dot to render the actual log. -->
+
+``` py
+argsp = argsubparsers.add_parser("log", help="Display history of a given commit.")
+argsp.add_argument("commit",
+                   default="HEAD",
+                   nargs="?",
+                   help="Commit to start at.")
+```
+
+``` py
+def cmd_log(args):
+    repo = repo_find()
+
+    print("digraph wyaglog{")
+    log_graphviz(repo, object_find(repo, args.commit), set())
+    print("}")
+
+def log_graphviz(repo, sha, seen):
+
+    if sha in seen:
+        return
+    seen.add(sha)
+
+    commit = object_read(repo, sha)
+    assert (commit.fmt==b'commit')
+
+    if not b'parent' in commit.kvlm.keys():
+        # Base case: the initial commit.
+        return
+
+    parents = commit.kvlm[b'parent']
+
+    if type(parents) != list:
+        parents = [ parents ]
+
+    for p in parents:
+        p = p.decode("ascii")
+        print ("c_{0} -> c_{1};".format(sha, p))
+        log_graphviz(repo, p, seen)
+```
+
+これで、私達の log コマンドをこのように使うことができます: <!-- You can now use our log command like this: -->
+
+```
+wyag log e03158242ecab460f31b0d6ae1642880577ccbe8 > log.dot
+dot -O -Tpdf log.dot
 ```
 
 ## 後書き <!-- Final words -->
