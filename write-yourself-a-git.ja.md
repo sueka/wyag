@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:00:13">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:32:31">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1174,6 +1174,30 @@ def show_ref(repo, refs, with_hash=True, prefix=""):
         else:
             show_ref(repo, v, with_hash=with_hash, prefix="{0}{1}{2}".format(prefix, "/" if prefix else "", k))
 ```
+
+### タグって何？ <!-- What’s a tag? -->
+
+参照の最もシンプルな用途はタグです。タグは、単なるオブジェクト（大抵はコミット）のユーザー定義名です。タグのごく一般的な用途はソフトウェアリリースの識別です: たとえば、プログラムのバージョン 12.78.52 の最後のコミットをマージしたところなので、最近のコミット（ `6071c08` と呼びましょう。）がバージョン 12.78.52 であるとします。この関聯付けを明示するには、次のようにするだけです: <!-- The most simple use of refs is tags. A tag is just a user-defined name for an object, often a commit. A very common use of tags is identifying software releases: You’ve just merged the last commit of, say, version 12.78.52 of your program, so your most recent commit (let’s call it 6071c08) is your version 12.78.52. To make this association explicit, all you have to do is: -->
+
+``` sh
+git tag v12.78.52 6071c08
+# the object hash ^here^^ is optional and defaults to HEAD.
+```
+
+これで、 `6071c08` を指す、 `v12.78.52` という名前の新しいタグが作られます。タグ付けはエイリアス化のようなものです: タグは既存のオブジェクトを参照する新しい方法を導入します。このタグが作られた後は、名前 `v12.78.52` は `6071c08` を参照しています。たとえば、これら2つのコマンドは完全に等価です: <!-- This creates a new tag, called v12.78.52, pointing at 6071c08. Tagging is like aliasing: a tag introduces a new way to refer to an existing object. After the tag is created, the name v12.78.52 refers to 6071c08. For example, these two commands are now perfectly equivalent: -->
+
+``` sh
+git checkout v12.78.52
+git checkout 6071c08
+```
+
+---
+
+**Note**
+
+バージョンはタグの一般的な用途ですが、 Git にあるほとんど全てのものと同様に、タグには事前定義された意味論はありません: タグは、意味してほしいものを意味し、指したいオブジェクトを指すことができ、*ブロブ*をタグ付けすることさえできます！ <!-- Versions are a common use of tags, but like almost everything in Git, tags have no predefined semantics: they mean whatever you want them to mean, and can point to whichever object you want, you can even tag blobs! -->
+
+---
 
 ## 後書き <!-- Final words -->
 
