@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T03:13:19">2020年11月26日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T05:23:24">2020年11月26日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1031,6 +1031,65 @@ def cmd_ls_tree(args):
             object_read(repo, item.sha).fmt.decode("ascii"),
             item.sha,
             item.path.decode("ascii")))
+```
+
+### checkout コマンド <!-- The checkout command -->
+
+実装を分かりやすくするために、実際の git コマンドを過度に単純化します。また、セーフガードもいくつか追加します。私達のバージョンの checkout は次のように動作します: <!-- We’re going to oversimplify the actual git command to make our implementation clear and understandable. We’re also going to add a few safeguards. Here’s how our version of checkout will work: -->
+
+- 2つの引数を取ります: コミットとディレクトリです。 Git の checkout に必要なのはコミットだけです。 <!-- It will take two arguments: a commit, and a directory. Git checkout only needs a commit. -->
+- それから、**ディレクトリが空の場合かつ空の場合に限り**、ツリーをディレクトリにインスタンス化します。 Git にはデータの削除を避けるためのセーフガードがたくさんありますが、あまりにも複雑で、 wyag で再現しようとするのは安全ではありません。 wyag の目的は git のデモンストレーションであって、作業用の実装を作ることではないので、この制限は許容範囲内のものです。 <!-- It will then instantiate the tree in the directory, if and only if the directory is empty. Git is full of safeguards to avoid deleting data, which would be too complicated and unsafe to try to reproduce in wyag. Since the point of wyag is to demonstrate git, not to produce a working implementation, this limitation is acceptable. -->
+
+始めましょう。いつものように、サブパーザーが必要です: <!-- Let’s get started. As usual, we need a subparser: -->
+
+``` py
+argsp = argsubparsers.add_parser("checkout", help="Checkout a commit inside of a directory.")
+
+argsp.add_argument("commit",
+                   help="The commit or tree to checkout.")
+
+argsp.add_argument("path",
+                   help="The EMPTY directory to checkout on.")
+```
+
+ラッパー関数です: <!-- A wrapper function: -->
+
+``` py
+def cmd_checkout(args):
+    repo = repo_find()
+
+    obj = object_read(repo, object_find(repo, args.commit))
+
+    # If the object is a commit, we grab its tree
+    if obj.fmt == b'commit':
+        obj = object_read(repo, obj.kvlm[b'tree'].decode("ascii"))
+
+    # Verify that path is an empty directory
+    if os.path.exists(args.path):
+        if not os.path.isdir(args.path):
+            raise Exception("Not a directory {0}!".format(args.path))
+        if os.listdir(args.path):
+            raise Exception("Not empty {0}!".format(args.path))
+    else:
+        os.makedirs(args.path)
+
+    tree_checkout(repo, obj, os.path.realpath(args.path).encode())
+```
+
+そして、実際の作業を行う関数です: <!-- And a function to do the actual work: -->
+
+``` py
+def tree_checkout(repo, tree, path):
+    for item in tree.items:
+        obj = object_read(repo, item.sha)
+        dest = os.path.join(path, item.path)
+
+        if obj.fmt == b'tree':
+            os.mkdir(dest)
+            tree_checkout(repo, obj, dest)
+        elif obj.fmt == b'blob':
+            with open(dest, 'wb') as f:
+                f.write(obj.blobdata)
 ```
 
 ## 後書き <!-- Final words -->
