@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:48:06">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T21:05:22">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1218,6 +1218,55 @@ class GitTag(GitCommit):
 ```
 
 これでタグがサポートされました。 <!-- And now we support tags. -->
+
+### tag コマンド <!-- The tag command -->
+
+tag コマンドを追加しましょう。 Git では、このコマンドは2つのことを行います: 新しいタグを作るか、（デフォルトで）既存のタグの一覧を表示するかです。なので、次のように実行できます: <!-- Let’s add the tag command. In Git, it does two things: it creates a new tag or list existing tags (by default). So you can invoke it with: -->
+
+``` sh
+git tag                  # List all tags
+git tag NAME [OBJECT]    # create a new *lightweight* tag NAME, pointing
+                         # at HEAD (default) or OBJECT
+git tag -a NAME [OBJECT] # create a new tag *object* NAME, pointing at
+                         # HEAD (default) or OBJECT
+```
+
+これを argparse に翻訳すると次のようになります。 `--list` と `[-a] name [object]` の間の相互排除を無視していることに注意してください。これは argparse には複雑すぎるようです。 <!-- This translates to argparse as follows. Notice we ignore the mutual exclusion between --list and [-a] name [object], which seems too complicated for argparse. -->
+
+``` py
+argsp = argsubparsers.add_parser(
+    "tag",
+    help="List and create tags")
+
+argsp.add_argument("-a",
+                    action="store_true",
+                    dest="create_tag_object",
+                    help="Whether to create a tag object")
+
+argsp.add_argument("name",
+                    nargs="?",
+                    help="The new tag's name")
+
+argsp.add_argument("object",
+                    default="HEAD",
+                    nargs="?",
+                    help="The object the new tag will point to")
+```
+
+`cmd_tag` 関数は、 `name` が与えられているかどうかによって、振る舞い（一覧または作成）をディスパッチします。 <!-- The cmd_tag function will dispatch behavior (list or create) depending on whether or not name is provided. -->
+
+``` py
+def cmd_tag(args):
+    repo = repo_find()
+
+    if args.name:
+        tag_create(args.name,
+                   args.object,
+                   type="object" if args.create_tag_object else "ref")
+    else:
+        refs = ref_list(repo)
+        show_ref(repo, refs["tags"], with_hash=False)
+```
 
 ## 後書き <!-- Final words -->
 
