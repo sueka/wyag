@@ -592,3 +592,21 @@ def show_ref(repo, refs, with_hash=True, prefix=""):
 
 class GitTag(GitCommit):
     fmt = b'tag'
+
+argsp = argsubparsers.add_parser(
+    "tag",
+    help="List and create tags")
+
+argsp.add_argument("-a",
+                    action="store_true",
+                    dest="create_tag_object",
+                    help="Whether to create a tag object")
+
+argsp.add_argument("name",
+                    nargs="?",
+                    help="The new tag's name")
+
+argsp.add_argument("object",
+                    default="HEAD",
+                    nargs="?",
+                    help="The object the new tag will point to")
