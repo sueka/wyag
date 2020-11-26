@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T21:05:22">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T23:06:58">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1267,6 +1267,28 @@ def cmd_tag(args):
         refs = ref_list(repo)
         show_ref(repo, refs["tags"], with_hash=False)
 ```
+
+### ブランチって何？ <!-- What’s a branch? -->
+
+見て見ぬ振りをしてきたことに本気で対処する時です: ほとんどの Git ユーザーと同様に、 wyag は、ブランチとは何なのかをまだ全く理解していません。現在のところ、 wyag は、リポジトリを無秩序なオブジェクトの束として扱い、その一部をコミットとして扱っており、コミットはブランチの中にグループ化されているという事実や、 `HEAD` コミット（*すなわち*、**現在の**ブランチの**先頭の**コミット）が存在するという事実を全く表現していません。 <!-- It’s time to address the elephant in the room: like most Git users, wyag still doesn’t have any idea what a branch is. It currently treats a repository as a bunch of disorganized objects, some of them commits, and has no representation whatsoever of the fact that commits are grouped in branches, and that at every point in time there’s a commit that’s HEAD, ie, the head commit of the current branch. -->
+
+では、ブランチとは何なのでしょう？　実はその答えは意外とシンプルですが、ただ驚くことになるかもしれません: **ブランチはコミットへの参照です**。ブランチはコミット名の一種だと言うこともできます。この点では、ブランチはタグと全く同じものです。タグは `.git/refs/tags` にある参照であり、ブランチは `.git/refs/heads` にある参照です。 <!-- Now, what’s a branch? The answer is actually surprisingly simple, but it may also end up being simply surprising: a branch is a reference to a commit. You could even say that a branch is a kind of a name for a commit. In this regard, a branch is exactly the same thing as a tag. Tags are refs that live in .git/refs/tags, branches are refs that live in .git/refs/heads. -->
+
+勿論、ブランチとタグには違いがあります: <!-- There are, of course, differences between a branch and a tag: -->
+
+1.  ブランチはコミットへの参照ですが、タグはあらゆるオブジェクトを参照できます。 <!-- Branches are references to a commit, tags can refer to any object; -->
+1.  しかし、最も重要なことは、ブランチの参照はコミットごとに更新されるということです。あなたがコミットするたびに、 Git は実際にはこれを行っています: <!-- But most importantly, the branch ref is updated at each commit. This means that whenever you commit, Git actually does this: -->
+    1.  現在のブランチの ID を親として使い、新しいコミットオブジェクトが作られます。 <!-- a new commit object is created, with the current branch’s ID as its parent; -->
+    1.  コミットオブジェクトがハッシュされ、保存されます。 <!-- the commit object is hashed and stored; -->
+    1.  ブランチの参照が新しいコミットのハッシュを参照するように更新されます。 <!-- the branch ref is updated to refer to the new commit’s hash. -->
+
+以上です。 <!-- That’s all. -->
+
+しかし、**現在の**ブランチはどうでしょうか？　実はもっと簡単です。 `refs` 階層の外側、 `.git/HEAD` にある参照ファイルで、**間接**参照（つまり、 `ref: path/to/other/ref` 形式のものであり、単純なハッシュではありません。）です。 <!-- But what about the current branch? It’s actually even easier. It’s a ref file outside of the refs hierarchy, in .git/HEAD, which is an indirect ref (that is, it is of the form ref: path/to/other/ref, and not a simple hash). -->
+
+**デタッチされたHEAD** <!-- Detached HEAD -->
+
+適当なコミットをチェックアウトすると、 git は「 HEAD がデタッチされた状態 (detached HEAD state) 」であることを警告します。これは、もはやどのブランチにも居ないという意味です。この場合、 `.git/HEAD` は**直接**参照です: 内容は SHA-1 です。 <!-- When you just checkout a random commit, git will warn you it’s in “detached HEAD state”. This means you’re not on any branch anymore. In this case, .git/HEAD is a direct reference: it contains a SHA-1. -->
 
 ## 後書き <!-- Final words -->
 
