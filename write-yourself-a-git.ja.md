@@ -891,6 +891,36 @@ dot -O -Tpdf log.dot
 
 ---
 
+## コミットデータの読み取り: checkout <!-- Reading commit data: checkout -->
+
+コミットが特定の状態のファイルとディレクトリよりもずっと多くのものを保持しているのは良いことですが、本当に便利なものではありません。おそらくツリーオブジェクトも実装しはじめる時期に来たので、コミットを作業ツリーにチェックアウトできるようにしましょう。 <!-- It’s all well that commits hold a lot more than files and directories in a given state, but that doesn’t make them really useful. It’s probably time to start implementing tree objects as well, so we’ll be able to checkout commits into the work tree. -->
+
+### ツリーには何があるの？ <!-- What’s in a tree? -->
+
+非形式的には、ツリーは作業ツリーの内容を記述し、ブロブをパスに関聯付けます。ファイルモード、（作業ツリーに対する相対）パス、そして SHA-1 から成る3要素タプルの配列です。典型的なツリーの内容はこのような見た目をしています:
+<!-- Informally, a tree describes the content of the work tree, that it, it associates blobs to paths. It’s an array of three-element tuples made of a file mode, a path (relative to the worktree) and a SHA-1. A typical tree contents may look like this: -->
+
+|  モード  |                    SHA-1                   |     パス     |
+|----------|--------------------------------------------|--------------|
+| `100644` | `894a44cc066a027465cd26d634948d56d13af9af` | `.gitignore` |
+| `100644` | `94a9ed024d3859793618152ea559a168bbcbb5e2` | `LICENSE`    |
+| `100644` | `bab489c4f4600a38ce6dbfd652b90383a4aa3e45` | `README.md`  |
+| `100644` | `6d208e47659a2a10f5f8640e0155d9276a2130a9` | `src`        |
+| `040000` | `e7445b03aea61ec801b20d6ab62f076208b7d097` | `tests`      |
+| `040000` | `d5ec863f17f3a2e92aa8f6b66ac18f7b09fd1b38` | `main.c`     |
+
+モードは単なるファイルの[モード](https://en.wikipedia.org/wiki/File_system_permissions)、パスはファイルの場所です。 SHA-1 はブロブか別のツリーオブジェクトのどちらかを参照しています。ブロブならパスはファイル、ツリーならパスはディレクトリです。このツリーをファイルシステム内でインスタンス化するには、最初のパス (`.gitignore`) に関聯付けられたオブジェクトを読み込み、そのタイプを確認します。これはブロブなので、このブロブの内容で、 `.gitignore` という名前のファイルを作るだけです。 `LICENSE` と `README.md` については同様です。しかし、 `src` に関聯付けられているオブジェクトはブロブではなく、別のツリーです: ディレクトリ `src` を作り、そのディレクトリの中で、新しいツリーを使って同じ操作を繰り返します。 <!-- Mode is just the file’s mode, path is its location. The SHA-1 refers to either a blob or another tree object. If a blob, the path is a file, if a tree, it’s directory. To instantiate this tree in the filesystem, we would begin by loading the object associated to the first path (.gitignore) and check its type. Since it’s a blob, we’ll just create a file called .gitignore with this blob’s contents; and same for LICENSE and README.md. But the object associated with src is not a blob, but another tree: we’ll create the directory src and repeat the same operation in that directory with the new tree. -->
+
+---
+
+**Warning**
+
+**パスは単一のファイルシステムエントリーです** <!-- A path is a single filesystem entry -->
+
+パスは丁度1つのオブジェクトを識別します。2つでも3つでもありません。5段階にネストしたディレクトリがあるなら、再帰的に互いを参照するツリーオブジェクトが5つ必要になります。 `dir1/dir2/dir3/dir4/dir5` のように、単一のツリーエントリーに完全なパスを入れるショートカットはできません。 <!-- The path identifies exactly one object. Not two, not three. If you have five levels of nested directories, you’re going to need five tree objects recursively referring to one another. You cannot take the shortcut of putting a full path in a single tree entry, like dir1/dir2/dir3/dir4/dir5. -->
+
+---
+
 ## 後書き <!-- Final words -->
 
 ### License
