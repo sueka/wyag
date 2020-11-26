@@ -469,3 +469,16 @@ def tree_parse(raw):
         ret.append(data)
 
     return ret
+
+def tree_serialize(obj):
+    #@FIXME Add serializer!
+    ret = b''
+    for i in obj.items:
+        ret += i.mode
+        ret += b' '
+        ret += i.path
+        ret += b'\x00'
+        sha = int(i.sha, 16)
+        # @FIXME Does
+        ret += sha.to_bytes(20, byteorder="big")
+    return ret
