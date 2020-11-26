@@ -508,3 +508,11 @@ def cmd_ls_tree(args):
             object_read(repo, item.sha).fmt.decode("ascii"),
             item.sha,
             item.path.decode("ascii")))
+
+argsp = argsubparsers.add_parser("checkout", help="Checkout a commit inside of a directory.")
+
+argsp.add_argument("commit",
+                   help="The commit or tree to checkout.")
+
+argsp.add_argument("path",
+                   help="The EMPTY directory to checkout on.")
