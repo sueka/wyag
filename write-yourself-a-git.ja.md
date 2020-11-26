@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-25T23:55:21">2020年11月26日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T03:13:19">2020年11月26日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -920,6 +920,118 @@ dot -O -Tpdf log.dot
 パスは丁度1つのオブジェクトを識別します。2つでも3つでもありません。5段階にネストしたディレクトリがあるなら、再帰的に互いを参照するツリーオブジェクトが5つ必要になります。 `dir1/dir2/dir3/dir4/dir5` のように、単一のツリーエントリーに完全なパスを入れるショートカットはできません。 <!-- The path identifies exactly one object. Not two, not three. If you have five levels of nested directories, you’re going to need five tree objects recursively referring to one another. You cannot take the shortcut of putting a full path in a single tree entry, like dir1/dir2/dir3/dir4/dir5. -->
 
 ---
+
+### ツリーのパーズ <!-- Parsing trees -->
+
+タグやコミットとは違い、ツリーオブジェクトはバイナリオブジェクトです。でも、フォーマットは実際には非常にシンプルです。ツリーは、このフォーマットのレコードを連結したものです: <!-- Unlike tags and commits, tree objects are binary objects, but their format is actually quite simple. A tree is the concatenation of records of the format: -->
+
+```
+[mode] space [path] 0x00 [sha-1]
+```
+
+- `[mode]` は、最大6バイトの、ファイルモードの ASCII 表現です。たとえば、 100644 はバイト値 49 (ASCII 「1」), 48 (ASCII 「0」), 48, 54, 52, 52 にエンコードされます。 <!-- [mode] is up to six bytes and is an ASCII representation of a file mode. For example, 100644 is encoded with byte values 49 (ASCII “1”), 48 (ASCII “0”), 48, 54, 52, 52. -->
+- それに 0x20 、 ASCII スペースが続きます。 <!-- It’s followed by 0x20, an ASCII space; -->
+- ナル (0x00) で終わるパスが続きます。 <!-- Followed by the null-terminated (0x00) path; -->
+- 20バイトの、バイナリエンコーディングされた、オブジェクトの SHA-1 が続きます。なぜバイナリなのか？　神のみぞ知る。 <!-- Followed by the object’s SHA-1 in binary encoding, on 20 bytes. Why binary? God only knows. -->
+
+パーザーは非常にシンプルなものになります。まず、単一のレコード（葉、単一のパス）のための、小さなオブジェクトラッパーを作ります: <!-- The parser is going to be quite simple. First, create a tiny object wrapper for a single record (a leaf, a single path): -->
+
+``` py
+class GitTreeLeaf(object):
+    def __init__(self, mode, path, sha):
+        self.mode = mode
+        self.path = path
+        self.sha = sha
+```
+
+ツリーオブジェクトは同じ基本的なデータ構造の繰り返しに過ぎないので、パーザーは2つの関数で書きます。1つは単一のレコードを展開するパーザーです。パーズされたデータと、入力データの中で到達した位置を返します: <!-- Because a tree object is just the repetition of the same fundamental data structure, we write the parser in two functions. First, a parser to extract a single record, which returns parsed data and the position it reached in input data: -->
+
+``` py
+def tree_parse_one(raw, start=0):
+    # Find the space terminator of the mode
+    x = raw.find(b' ', start)
+    assert(x-start == 5 or x-start==6)
+
+    # Read the mode
+    mode = raw[start:x]
+
+    # Find the NULL terminator of the path
+    y = raw.find(b'\x00', x)
+    # and read the path
+    path = raw[x+1:y]
+
+    # Read the SHA and convert to an hex string
+    sha = hex(
+        int.from_bytes(
+            raw[y+1:y+21], "big"))[2:] # hex() adds 0x in front,
+                                           # we don't want that.
+    return y+21, GitTreeLeaf(mode, path, sha)
+```
+
+そして、「本物の」パーザーです。入力データが無くなるまで前のものをループで呼び出すだけのものです。 <!-- And the “real” parser which just calls the previous one in a loop, until input data is exhausted. -->
+
+``` py
+def tree_parse(raw):
+    pos = 0
+    max = len(raw)
+    ret = list()
+    while pos < max:
+        pos, data = tree_parse_one(raw, pos)
+        ret.append(data)
+
+    return ret
+```
+
+最後になりましたが、シリアライザーが必要です: <!-- Last but not least, we’ll need a serializer: -->
+
+``` py
+def tree_serialize(obj):
+    #@FIXME Add serializer!
+    ret = b''
+    for i in obj.items:
+        ret += i.mode
+        ret += b' '
+        ret += i.path
+        ret += b'\x00'
+        sha = int(i.sha, 16)
+        # @FIXME Does
+        ret += sha.to_bytes(20, byteorder="big")
+    return ret
+```
+
+あとは、これを全て組み合わせてクラスにするだけです: <!-- And now we just have to combine all that into a class: -->
+
+``` py
+class GitTree(GitObject):
+    fmt=b'tree'
+
+    def deserialize(self, data):
+        self.items = tree_parse(data)
+
+    def serialize(self):
+        return tree_serialize(self)
+```
+
+ついでに wyag に `ls-tree` コマンドを追加しましょう。簡単なので、やらない理由はありません。 <!-- While we’re at it, let’s add the ls-tree command to wyag. It’s so easy there’s no reason not to. -->
+
+``` py
+argsp = argsubparsers.add_parser("ls-tree", help="Pretty-print a tree object.")
+argsp.add_argument("object",
+                   help="The object to show.")
+
+def cmd_ls_tree(args):
+    repo = repo_find()
+    obj = object_read(repo, object_find(repo, args.object, fmt=b'tree'))
+
+    for item in obj.items:
+        print("{0} {1} {2}\t{3}".format(
+            "0" * (6 - len(item.mode)) + item.mode.decode("ascii"),
+            # Git's ls-tree displays the type
+            # of the object pointed to.  We can do that too :)
+            object_read(repo, item.sha).fmt.decode("ascii"),
+            item.sha,
+            item.path.decode("ascii")))
+```
 
 ## 後書き <!-- Final words -->
 
