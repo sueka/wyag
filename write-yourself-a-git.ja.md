@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:32:31">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:48:06">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1198,6 +1198,26 @@ git checkout 6071c08
 バージョンはタグの一般的な用途ですが、 Git にあるほとんど全てのものと同様に、タグには事前定義された意味論はありません: タグは、意味してほしいものを意味し、指したいオブジェクトを指すことができ、*ブロブ*をタグ付けすることさえできます！ <!-- Versions are a common use of tags, but like almost everything in Git, tags have no predefined semantics: they mean whatever you want them to mean, and can point to whichever object you want, you can even tag blobs! -->
 
 ---
+
+### タグオブジェクトのパーズ <!-- Parsing tag objects -->
+
+すでに、タグは実際には参照だと推測しているでしょう。タグは .git/refs/tags/ 階層にあります。唯一の注目する価値のある点は、2つのフレーバー（軽量タグとタグオブジェクト）があることです。 <!-- You’ve probably guessed already that tags are actually refs. They live in the .git/refs/tags/ hierarchy. The only point worth noting is that they come in two flavors: lightweight tags and tags objects. -->
+
+<dl>
+<dt>「軽量」タグ <!-- “Lightweight” tags --></dt>
+<dd>は、コミット、ツリー、またはブロブへの単なる通常の参照です。 <!-- are just regular refs to a commit, a tree or a blob. --></dd>
+<dt>タグオブジェクト <!-- Tag objects --></dt>
+<dd>は、 `tag` タイプのオブジェクトを指す通常の参照です。軽量タグと異なり、タグオブジェクトには、作者、日付、省略可能な PGP 署名、そして省略可能な註釈があります。フォーマットはコミットオブジェクトと同じです。 <!-- are regular refs pointing to an object of type tag. Unlike lightweight tags, tag objects have an author, a date, an optional PGP signature and an optional annotation. Their format is the same as a commit object. --></dd>
+</dl>
+
+タグオブジェクトは実装する必要すらありません。 `GitCommit` オブジェクトを再利用し、 `fmt` フィールドを変更するだけです: <!-- We don’t even need to implement tag objects, we can reuse GitCommit and just change the fmt field: -->
+
+``` py
+class GitTag(GitCommit):
+    fmt = b'tag'
+```
+
+これでタグがサポートされました。 <!-- And now we support tags. -->
 
 ## 後書き <!-- Final words -->
 
