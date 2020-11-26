@@ -459,3 +459,13 @@ def tree_parse_one(raw, start=0):
             raw[y+1:y+21], "big"))[2:] # hex() adds 0x in front,
                                            # we don't want that.
     return y+21, GitTreeLeaf(mode, path, sha)
+
+def tree_parse(raw):
+    pos = 0
+    max = len(raw)
+    ret = list()
+    while pos < max:
+        pos, data = tree_parse_one(raw, pos)
+        ret.append(data)
+
+    return ret
