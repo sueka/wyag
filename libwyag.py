@@ -482,3 +482,12 @@ def tree_serialize(obj):
         # @FIXME Does
         ret += sha.to_bytes(20, byteorder="big")
     return ret
+
+class GitTree(GitObject):
+    fmt=b'tree'
+
+    def deserialize(self, data):
+        self.items = tree_parse(data)
+
+    def serialize(self):
+        return tree_serialize(self)
