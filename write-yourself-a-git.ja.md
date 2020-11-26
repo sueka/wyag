@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T23:06:58">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T23:52:06">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -498,6 +498,7 @@ def object_read(repo, sha):
         return c(repo, raw[y+1:])
 ```
 
+<a id="foo"></a>
 まだ `object_find` 関数は導入していません。実のところ、これはプレースホルダーであり、このようなものです: <!-- We haven’t introduced the object_find function yet. It’s actually a placeholder, and looks like this: -->
 
 ``` py
@@ -1289,6 +1290,108 @@ def cmd_tag(args):
 **デタッチされたHEAD** <!-- Detached HEAD -->
 
 適当なコミットをチェックアウトすると、 git は「 HEAD がデタッチされた状態 (detached HEAD state) 」であることを警告します。これは、もはやどのブランチにも居ないという意味です。この場合、 `.git/HEAD` は**直接**参照です: 内容は SHA-1 です。 <!-- When you just checkout a random commit, git will warn you it’s in “detached HEAD state”. This means you’re not on any branch anymore. In this case, .git/HEAD is a direct reference: it contains a SHA-1. -->
+
+### オブジェクトの参照: `object_find` 関数 <!-- Referring to objects: the object_find function -->
+
+#### 名前の解決 <!-- Resolving names -->
+
+4つの引数を取って、2つ目を変更せずに返し、他の3つは無視するという[馬鹿げた object_find 関数](#foo)を作った時のことを覚えていますか？　それをより便利なものに置き換える時が来ました。小さいけど便利な、実際の Git の名前解決アルゴリズムのサブセットを実装します。新しい `object_find()` は2つのステップで動作します: 1つ目は、名前が与えられると完全な sha-1 ハッシュを返すというものです。たとえば、 `HEAD` なら現在のブランチの先頭のコミットのハッシュを返したりします。より正確には、この名前解決関数はこのように動作します: <!-- Remember when we’ve created the stupid object_find function that would take four arguments, return the second unmodified and ignore the other three? It’s time to replace it by something more useful. We’re going to implement a small, but usable, subset of the actual Git name resolution algorithm. The new object_find() will work in two steps: first, given a name, it will return a complete sha-1 hash. For example, with HEAD, it will return the hash of the head commit of the current branch, etc. More precisely, this name resolution function will work like this: -->
+
+- `name` が HEAD の場合、単に `.git/HEAD` を解決します。 <!-- If name is HEAD, it will just resolve .git/HEAD; -->
+- `name` が完全なハッシュの場合、そのハッシュが変更せずに返されます <!-- If name is a full hash, this hash is returned unmodified. -->
+- `name` が短いハッシュのように見える場合、完全なハッシュがその短いハッシュで始まるオブジェクトを集めます。 <!-- If name looks like a short hash, it will collect objects whose full hash begin with this short hash. -->
+- 最後に、 name に一致するタグとブランチを解決します。 <!-- At last, it will resolve tags and branches matching name. -->
+
+最後の2つのステップが値を*集める*方法に注意してください: 最初の2つは絶対参照なので、安全に結果を返すことができます。しかし、短いハッシュやブランチ名は曖昧なことがあるので、全ての可能なその名前の意味を列挙し、1つより多く見付かった場合はエラーを発生させたいです。 <!-- Notice how the last two steps collect values: the first two are absolute references, so we can safely return a result. But short hashes or branch names can be ambiguous, we want to enumerate all possible meanings of the name and raise an error if we’ve found more than 1. -->
+
+**短いハッシュ** <!-- Short hashes -->
+
+利便性のために、 Git では、名前の先頭部分でハッシュを参照できるようになっています。たとえば、 `5bd254aa973646fa16f66d702a5826ea14a3eb45` は `5bd254` として参照されることがあります。これを「短いハッシュ」と呼びます。 <!-- For convenience, Git allows to refer to hashes by a prefix of their name. For example, 5bd254aa973646fa16f66d702a5826ea14a3eb45 can be referred to as 5bd254. This is called a “short hash”. -->
+
+``` py
+def object_resolve(repo, name):
+    """Resolve name to an object hash in repo.
+
+This function is aware of:
+
+ - the HEAD literal
+ - short and long hashes
+ - tags
+ - branches
+ - remote branches"""
+    candidates = list()
+    hashRE = re.compile(r"^[0-9A-Fa-f]{1,16}$")
+    smallHashRE = re.compile(r"^[0-9A-Fa-f]{1,16}$")
+
+    # Empty string?  Abort.
+    if not name.strip():
+        return None
+
+    # Head is nonambiguous
+    if name == "HEAD":
+        return [ ref_resolve(repo, "HEAD") ]
+
+
+    if hashRE.match(name):
+        if len(name) == 40:
+            # This is a complete hash
+            return [ name.lower() ]
+        elif len(name) >= 4:
+            # This is a small hash 4 seems to be the minimal length
+            # for git to consider something a short hash.
+            # This limit is documented in man git-rev-parse
+            name = name.lower()
+            prefix = name[0:2]
+            path = repo_dir(repo, "objects", prefix, mkdir=False)
+            if path:
+                rem = name[2:]
+                for f in os.listdir(path):
+                    if f.startswith(rem):
+                        candidates.append(prefix + f)
+
+    return candidates
+```
+
+2つ目のステップは、タイプの引数が与えられた場合、見付けたオブジェクトを、要求されたタイプのオブジェクトまで辿るというものです。些細なケースだけを扱えばよいので、非常にシンプルな反復プロセスです: <!-- The second step is to follow the object we found to an object of the required type, if a type argument was provided. Since we only need to handle trivial cases, this is a very simple iterative process: -->
+
+- タグがあり、 fmt が他の何かの場合、そのタグを辿ります。 <!-- If we have a tag and fmt is anything else, we follow the tag. -->
+- コミットがあり、 fmt がツリーの場合、そのコミットのツリーオブジェクトを返します。 <!-- If we have a commit and fmt is tree, we return this commit’s tree object -->
+- その他全ての状況では、中断します。 <!-- In all other situations, we abort. -->
+
+（タグ自体をタグ付けすることができるため、ステップ数が不定なので、このプロセスは反復的です。） <!-- (The process is iterative because it may take an undefined number of steps, since tags themselves can be tagged) -->
+
+``` py
+def object_find(repo, name, fmt=None, follow=True):
+    sha = object_resolve(repo, name)
+
+    if not sha:
+        raise Exception("No such reference {0}.".format(name))
+
+    if len(sha) > 1:
+        raise Exception("Ambiguous reference {0}: Candidates are:\n - {1}.".format(name,  "\n - ".join(sha)))
+
+    sha = sha[0]
+
+    if not fmt:
+        return sha
+
+    while True:
+        obj = object_read(repo, sha)
+
+        if obj.fmt == fmt:
+            return sha
+
+        if not follow:
+            return None
+
+        # Follow tags
+        if obj.fmt == b'tag':
+            sha = obj.kvlm[b'object'].decode("ascii")
+        elif obj.fmt == b'commit' and fmt == b'tree':
+            sha = obj.kvlm[b'tree'].decode("ascii")
+        else:
+            return None
+```
 
 ## 後書き <!-- Final words -->
 
