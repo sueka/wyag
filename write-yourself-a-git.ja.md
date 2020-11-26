@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T05:23:24">2020年11月26日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T20:00:13">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1090,6 +1090,89 @@ def tree_checkout(repo, tree, path):
         elif obj.fmt == b'blob':
             with open(dest, 'wb') as f:
                 f.write(obj.blobdata)
+```
+
+## 参照、タグ、そしてブランチ <!-- Refs, tags and branches -->
+
+### 参照って何？ <!-- What’s a ref? -->
+
+Git の参照（ reference あるいは ref ）は、 git が保持するものの中でも最もシンプルな種類のものです。 `.git/refs` のサブディレクトリにあり、オブジェクトのハッシュの16進表現を ASCII でエンコードしたテキストファイルです。実際、これぐらいシンプルです: <!-- Git references, or refs, are probably the most simple type of things git holds. They live in subdirectories of .git/refs, and are text files containing a hexadecimal representation of an object’s hash, encoded in ASCII. They’re actually as simple as this: -->
+
+```
+6071c08bcb4757d8c89a30d9755d2466cef8c1de
+```
+
+参照は別の参照を参照することもあり、そうなると間接的にオブジェクトを参照するだけになりますが、その場合はこのようになります: <!-- Refs can also refer to another reference, and thus only indirectly to an object, in which case they look like this: -->
+
+```
+ref: refs/remotes/origin/master
+```
+
+---
+
+**Note**
+
+**直接参照と間接参照** <!-- Direct and indirect references -->
+
+今後は、 `ref: path/to/other/ref` 形式の参照を**間接**参照と呼び、 SHA-1 オブジェクト ID の参照を**直接参照**と呼びます。
+<!-- From now on, I will call a reference of the form ref: path/to/other/ref an indirect reference, and a ref with a SHA-1 object ID a direct reference. -->
+
+---
+
+この節は参照の用途について記述します。今のところ、重要なことはこれだけです: <!-- This whole section will describe the uses of refs. For now, all that matter is this: -->
+
+- 参照はテキストファイルです。 `.git/refs` 階層にあります。 <!-- they’re text files, in the .git/refs hierarchy; -->
+- 参照はオブジェクトの sha-1 識別子か別のブランチへの参照を保持しています。 <!-- they hold the sha-1 identifier of an object, or a reference to another branch. -->
+
+参照を扱うためには、まず、シンプルな再帰的ソルバーが必要になります。このソルバーは、参照の名前を取り、再帰参照（上で例示したような、その内容が `ref:` で始まる参照）を最後まで辿り、 SHA-1 を返します: <!-- To work with refs, we’re first going to need a simple recursive solver that will take a ref name, follow eventual recursive references (refs whose content begin with ref:, as exemplified above) and return a SHA-1: -->
+
+``` py
+def ref_resolve(repo, ref):
+    with open(repo_file(repo, ref), 'r') as fp:
+        data = fp.read()[:-1]
+        # Drop final \n ^^^^^
+    if data.startswith("ref: "):
+        return ref_resolve(repo, data[5:])
+    else:
+        return data
+```
+
+小さな関数を2つ作って show-refs コマンドを実装しましょう。1つ目は、参照を集めて辞書として返す、つまらない再帰関数です: <!-- Let’s create two small functions, and implement the show-refs command. First, a stupid recursive function to collect refs and return them as a dict: -->
+
+``` py
+def ref_list(repo, path=None):
+    if not path:
+        path = repo_dir(repo, "refs")
+    ret = collections.OrderedDict()
+    # Git shows refs sorted.  To do the same, we use
+    # an OrderedDict and sort the output of listdir
+    for f in sorted(os.listdir(path)):
+        can = os.path.join(path, f)
+        if os.path.isdir(can):
+            ret[f] = ref_list(repo, can)
+        else:
+            ret[f] = ref_resolve(repo, can)
+
+    return ret
+```
+
+``` py
+argsp = argsubparsers.add_parser("show-ref", help="List references.")
+
+def cmd_show_ref(args):
+    repo = repo_find()
+    refs = ref_list(repo)
+    show_ref(repo, refs, prefix="refs")
+
+def show_ref(repo, refs, with_hash=True, prefix=""):
+    for k, v in refs.items():
+        if type(v) == str:
+            print ("{0}{1}{2}".format(
+                v + " " if with_hash else "",
+                prefix + "/" if prefix else "",
+                k))
+        else:
+            show_ref(repo, v, with_hash=with_hash, prefix="{0}{1}{2}".format(prefix, "/" if prefix else "", k))
 ```
 
 ## 後書き <!-- Final words -->
