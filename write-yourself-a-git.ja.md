@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T00:53:45">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T01:12:40">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1202,7 +1202,7 @@ git checkout 6071c08
 
 ### タグオブジェクトのパーズ <!-- Parsing tag objects -->
 
-すでに、タグは実際には参照だと推測しているでしょう。タグは .git/refs/tags/ 階層にあります。唯一の注目する価値のある点は、2つのフレーバー（軽量タグとタグオブジェクト）があることです。 <!-- You’ve probably guessed already that tags are actually refs. They live in the .git/refs/tags/ hierarchy. The only point worth noting is that they come in two flavors: lightweight tags and tags objects. -->
+すでに、タグは実際には参照だと推測しているでしょう。タグは `.git/refs/tags/` 階層にあります。唯一の注目する価値のある点は、2つのフレーバー（軽量タグとタグオブジェクト）があることです。 <!-- You’ve probably guessed already that tags are actually refs. They live in the .git/refs/tags/ hierarchy. The only point worth noting is that they come in two flavors: lightweight tags and tags objects. -->
 
 <dl>
 <dt>「軽量」タグ <!-- “Lightweight” tags --></dt>
