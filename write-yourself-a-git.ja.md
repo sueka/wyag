@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T01:12:40">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T01:32:14">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1232,7 +1232,7 @@ git tag -a NAME [OBJECT] # create a new tag *object* NAME, pointing at
                          # HEAD (default) or OBJECT
 ```
 
-これを argparse に翻訳すると次のようになります。 `--list` と `[-a] name [object]` の間の相互排除を無視していることに注意してください。これは argparse には複雑すぎるようです。 <!-- This translates to argparse as follows. Notice we ignore the mutual exclusion between --list and [-a] name [object], which seems too complicated for argparse. -->
+これを argparse に翻訳すると次のようになります。 `--list` と `[-a] name [object]` の間の相互排除を無視していることに注意してください。これは argparse には複雑すぎるようです。 <!-- This translates to argparse as follows. Notice we ignore the mutual exclusion between -[HACK: for https://github.github.com/gfm/#html-comment]-list and [-a] name [object], which seems too complicated for argparse. -->
 
 ``` py
 argsp = argsubparsers.add_parser(
