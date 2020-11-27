@@ -691,3 +691,17 @@ def object_find(repo, name, fmt=None, follow=True):
             sha = obj.kvlm[b'tree'].decode("ascii")
         else:
             return None
+
+argsp = argsubparsers.add_parser(
+    "rev-parse",
+    help="Parse revision (or other objects )identifiers")
+
+argsp.add_argument("--wyag-type",
+                   metavar="type",
+                   dest="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   default=None,
+                   help="Specify the expected type")
+
+argsp.add_argument("name",
+                   help="The name to parse")
