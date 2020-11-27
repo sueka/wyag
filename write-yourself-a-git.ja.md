@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-26T23:52:06">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T00:15:50">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1391,6 +1391,36 @@ def object_find(repo, name, fmt=None, follow=True):
             sha = obj.kvlm[b'tree'].decode("ascii")
         else:
             return None
+```
+
+#### rev-parse コマンド <!-- The rev-parse command -->
+
+`git rev-parse` コマンドは多くのことを行いますが、そのユースケースの1つはリビジョン（コミット）の参照の解決です。 `object_find` の「追跡 (follow) 」機能をテストするために、このインターフェイスに省略可能な `wyag-type` 引数を追加します。 <!-- The git rev-parse commands does a lot, but one of its use cases is solving revision (commits) references. For the purpose of testing the “follow” feature of object_find, we’ll add an optional wyag-type arguments to its interface. -->
+
+``` py
+argsp = argsubparsers.add_parser(
+    "rev-parse",
+    help="Parse revision (or other objects )identifiers")
+
+argsp.add_argument("--wyag-type",
+                   metavar="type",
+                   dest="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   default=None,
+                   help="Specify the expected type")
+
+argsp.add_argument("name",
+                   help="The name to parse")
+```
+
+``` py
+def cmd_rev_parse(args):
+    if args.type:
+        fmt = args.type.encode()
+
+    repo = repo_find()
+
+    print (object_find(repo, args.name, args.type, follow=True))
 ```
 
 ## 後書き <!-- Final words -->
