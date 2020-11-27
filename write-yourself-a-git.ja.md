@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T00:15:50">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T00:53:45">2020年11月27日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -1421,6 +1421,55 @@ def cmd_rev_parse(args):
     repo = repo_find()
 
     print (object_find(repo, args.name, args.type, follow=True))
+```
+
+## ステージングエリアとインデックスファイル <!-- The staging area and the index file -->
+
+コミットの作成は、大量の（1つだけではなく、再帰的であることを覚えておいてください。正確にディレクトリごとに1つずつ必要です。）新しいツリーオブジェクトとルートツリーオブジェクトを指すコミットオブジェクトを作り、 `HEAD` をそのコミットを指すように更新するだけのようです。このようにすることもできますが、 Git はもっと複雑な道を選びました: インデックスファイルの形式で実装されたステージングエリアです。 <!-- Creating commits seems to be simply a matter of creating a bunch of new tree object (not just one, remember they’re recursive — you need exactly one per directory), a commit object pointing at the root tree object, and updating HEAD to point to that commit — and yes, we could do it like this, but Git chooses a much more complicated road: the staging area, implemented in the form of the index file. -->
+
+Git でコミットするには、まず `git add` や `git rm` で変更を「ステージ」し、*それから*コミットするということはご存じの通りです: コミットのようなオブジェクトを使ってステージングエリアを表現するのが論理的に思えますが、 Git は全く異なった道を選び、インデックスファイルの形式の、全く異なったメカニズムを使っています。インデックスファイルは、 HEAD コミットからの変更の集合を表現しており、コミットするには、これを組み合わせて新しいコミットにしなければなりません。 <!-- You certainly know that to commit in Git, you first “stage” some changes, using git add and git rm, then commit. It would seem logical to use a commit-like object to represent the staging area, but Git goes a completely different way, and uses a completely different mechanism, in the form of the index file. The index file represents a set of changes from the HEAD commit, to commit, they must be combined to create a new commit. -->
+
+### インデックスのパーズ <!-- Parsing the index -->
+
+インデックスファイルは、 Git リポジトリが保持しうるデータの中で最も複雑なものです。完全なドキュメントは Git ソースツリーの `Documentation/technical/commit-graph-format.txt` にあり、 [GitHub ミラー上で](https://github.com/git/git/blob/master/Documentation/technical/index-format.txt)読むことができます。インデックスは3つの部分から成ります: <!-- The index file is by far the most complicated piece of data a Git repository can hold. Its complete documentation can be found in Git source tree at Documentation/technical/commit-graph-format.txt, you can read it on the Github mirror. The index is made of three parts: -->
+
+- 署名といくつかの基本的な情報（最も重要なのはそのインデックスが保持しているエントリーの個数です。）を持つ、古典的なヘッダー <!-- A classic header with a signature and a few basic info, most importantly the number of entries it holds; -->
+- ソートされた、それぞれが変更を表現する、一連のエントリー <!-- A series of entries, sorted, each representing a change; -->
+- 一連の省略可能な拡張機能（無視します。） <!-- A series of optional extensions, which we’ll ignore. -->
+
+私達が表現する必要があるのはエントリーアイテムだけです。実際にはかなり多くのものを保持しています: <!-- The only thing we need to represent is an entry item. It actually holds quite a lot of stuff: -->
+
+``` py
+class GitIndexEntry(object):
+    ctime = None
+    """The last time a file's metadata changed.  This is a tuple (seconds, nanoseconds)"""
+
+    mtime = None
+    """The last time a file's data changed.  This is a tuple (seconds, nanoseconds)"""
+
+    dev = None
+    """The ID of device containing this file"""
+    ino = None
+    """The file's inode number"""
+    mode_type = None
+    """The object type, either b1000 (regular), b1010 (symlink), b1110 (gitlink). """
+    mode_perms = None
+    """The object permissions, an integer."""
+    uid = None
+    """User ID of owner"""
+    gid = None
+    """Group ID of ownner (according to stat 2.  Isn'th)"""
+    size = None
+    """Size of this object, in bytes"""
+    obj = None
+    """The object's hash as a hex string"""
+    flag_assume_valid = None
+    flag_extended = None
+    flag_stage = None
+    flag_name_length = None
+    """Length of the name if < 0xFFF (yes, three Fs), -1 otherwise"""
+
+    name = None
 ```
 
 ## 後書き <!-- Final words -->
