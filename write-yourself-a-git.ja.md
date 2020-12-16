@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-11-27T01:32:14">2020年11月27日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-12-16T19:32:30">2020年12月17日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -10,7 +10,7 @@
 
 これは冗談ではないし、まったく複雑なことでもありません: この記事を上から下まで読んでコードを書けば（あるいは、[このリポジトリ](https://github.com/thblt/write-yourself-a-git)をクローンしさえすれば。ただし、自分で書くべきです。本当に。）最後には `wyag` というプログラムが出来上がります。そのプログラムは、 Git の全ての基本機能 (`init`, `add`, `rm`, `status`, `commit`, `log`, ..) を `git` 自体との完全な互換性を持つように実装しています。実際、この記事の最後のコミットは `git` ではなく `wyag` で作られています。そして、その全てが503行の非常にシンプルな Python コードになります。 <!-- It’s not a joke, and it’s really not complicated: if you read this article top to bottom and write the code (or just clone the repository — but you should write the code yourself, really), you’ll end up with a program, called wyag, that will implement all the fundamental features of git: init, add, rm, status, commit, log… in a way that is perfectly compatible with git itself. The last commit of this article was actually created with wyag, not git. And all that in exactly 503 lines of very simple Python code. -->
 
-「しかし、それには Git は複雑すぎるのではないか」？　私の考えでは、 Git が複雑であるというのは誤解です。 Git が大きなプログラムで、多機能であることは真実です。しかし、そのプログラムのコアは実際には非常にシンプルで、 Git プログラムの見掛け上の複雑さは、それがしばしばひどく反直感的である（そして、ブログ投稿 [Git is a burrito](https://byorgey.wordpress.com/2009/01/12/abstraction-intuition-and-the-monad-tutorial-fallacy/) はおそらく助けにならない）という事実にまず起因しています。しかし、 Git を最も混乱させているのは、そのコアモデルの極端なシンプルさ*と*パワーかもしれません。コアのシンプルさと強力なアプリケーションの組み合わせは、基本的な抽象（モナドとかどう？）の本質的なシンプルさから種々のアプリケーションを得るために必要な精神的飛躍のため、物事を掴みにくくすることがよくあります。 <!-- But isn’t Git too complex for that? That Git is complex is, in my opinion, a misconception. Git is a large program, with a lot of features, that’s true. But the core of that program is actually extremely simple, and its apparent complexity stems first from the fact it’s often deeply counterintuitive (and Git is a burrito blog posts probably don’t help). But maybe what makes Git the most confusing is the extreme simplicity and power of its core model. The combination of core simplicity and powerful applications often makes thing really hard to grasp, because of the mental jump required to derive the variety of applications from the essential simplicity of the fundamental abstraction (monads, anyone?) -->
+しかし、それには Git は複雑すぎるのではないか？　私の考えでは、 Git が複雑であるというのは誤解です。 Git が大きなプログラムで、多機能であることは真実です。しかし、そのプログラムのコアは実際には非常にシンプルで、 Git プログラムの見掛け上の複雑さは、それがしばしばひどく反直感的である（そして、ブログ投稿 [Git is a burrito](https://byorgey.wordpress.com/2009/01/12/abstraction-intuition-and-the-monad-tutorial-fallacy/) はおそらく助けにならない）という事実にまず起因しています。しかし、 Git を最も混乱させているのは、そのコアモデルの極端なシンプルさ*と*パワーかもしれません。コアのシンプルさと強力なアプリケーションの組み合わせは、基本的な抽象（モナドとかどう？）の本質的なシンプルさから種々のアプリケーションを得るために必要な精神的飛躍のため、物事を掴みにくくすることがよくあります。 <!-- But isn’t Git too complex for that? That Git is complex is, in my opinion, a misconception. Git is a large program, with a lot of features, that’s true. But the core of that program is actually extremely simple, and its apparent complexity stems first from the fact it’s often deeply counterintuitive (and Git is a burrito blog posts probably don’t help). But maybe what makes Git the most confusing is the extreme simplicity and power of its core model. The combination of core simplicity and powerful applications often makes thing really hard to grasp, because of the mental jump required to derive the variety of applications from the essential simplicity of the fundamental abstraction (monads, anyone?) -->
 
 Git を実装することで、その基本を全て赤裸々に曝け出させることができます。 <!-- Implementing Git will expose its fundamentals in all their naked glory. -->
 
@@ -392,7 +392,7 @@ def repo_find(path=".", required=True):
 
 これら2つのコマンドを知らない人も居るかもしれません。現に、日常の git ツールボックスには含まれていないし、非常に低レベルなもの（ git 用語でいう「配管 (plumbing) 」）です。これらのコマンドがすることは非常にシンプルです: `hash-object` は既存のファイルを git オブジェクトに変換し、 `cat-file` は既存の git オブジェクトを標準出力に印字します。 <!-- Maybe you don’t know these two commands — they’re not exactly part of an everyday git toolbox, and they’re actually quite low-level (“plumbing”, in git parlance). What they do is actually very simple: hash-object converts an existing file into a git object, and cat-file prints an existing git object to the standard output. -->
 
-では、**実のところ、 Git オブジェクトとは何なのでしょう？**　 Git は「内容アドレスファイルシステム」です 。つまり、通常のファイルシステムでは、ファイル名は恣意的であり、ファイルの内容と無関係であるのに対し、 Git が保存するファイル名は、その内容から数学的に導き出される、ということです。これには非常に重要な含意があります: 仮にテキストファイルが1バイト変わったら、その内部名も変わるということです。簡単に言えば、ファイルを*変更している*のではなく、別の場所に新しいファイルを作っているということです。オブジェクトとは正に git リポジトリ内のファイルのことであり、そのパスはその内容によって決定されます。 <!-- Now, what actually is a Git object? At its core, Git is a “content-addressed filesystem”. That means that unlike regular filesystems, where the name of a file is arbitrary and unrelated to that file’s contents, the names of files as stored by Git are mathematically derived from their contents. This has a very important implication: if a single byte of, say, a text file, changes, its internal name will change, too. To put it simply: you don’t modify a file, you create a new file in a different location. Objects are just that: files in the git repository, whose path is determined by their contents. -->
+では、**実のところ、 Git オブジェクトとは何なのでしょう？**　 Git は「内容アドレスファイルシステム」です。つまり、通常のファイルシステムでは、ファイル名は恣意的であり、ファイルの内容と無関係であるのに対し、 Git が保存するファイル名は、その内容から数学的に導き出される、ということです。これには非常に重要な含意があります: 仮にテキストファイルが1バイト変わったら、その内部名も変わるということです。簡単に言えば、ファイルを*変更している*のではなく、別の場所に新しいファイルを作っているということです。オブジェクトとは正に git リポジトリ内のファイルのことであり、そのパスはその内容によって決定されます。 <!-- Now, what actually is a Git object? At its core, Git is a “content-addressed filesystem”. That means that unlike regular filesystems, where the name of a file is arbitrary and unrelated to that file’s contents, the names of files as stored by Git are mathematically derived from their contents. This has a very important implication: if a single byte of, say, a text file, changes, its internal name will change, too. To put it simply: you don’t modify a file, you create a new file in a different location. Objects are just that: files in the git repository, whose path is determined by their contents. -->
 
 ---
 
@@ -499,7 +499,7 @@ def object_read(repo, sha):
 ```
 
 <a id="foo"></a>
-まだ `object_find` 関数は導入していません。実のところ、これはプレースホルダーであり、このようなものです: <!-- We haven’t introduced the object_find function yet. It’s actually a placeholder, and looks like this: -->
+`object_find` 関数はまだ導入していません。実のところ、これはプレースホルダーであり、このようなものです: <!-- We haven’t introduced the object_find function yet. It’s actually a placeholder, and looks like this: -->
 
 ``` py
 def object_find(repo, name, fmt=None, follow=True):
@@ -704,7 +704,7 @@ Create first draft
 
 これらのフィールドを見てみましょう: <!-- Let’s have a look at those fields: -->
 
-- `tree` は、ツリーオブジェクトへの参照であり、すぐ後で見ることになるオブジェクトタイプです。ツリーは、ブロブの ID をファイルシステム上の位置に割り当て、作業ツリーの状態を記述します。簡単に言えば、コミットの実際のコンテンツ（ファイルとその行き先）です。 <!-- tree is a reference to a tree object, a type of object that we’ll see soon. A tree maps blobs IDs to filesystem locations, and describes a state of the work tree. Put simply, it is the actual content of the commit: files, and where they go. -->
+- `tree` は、ツリーオブジェクトへの参照であり、すぐ後で見ることになるオブジェクトタイプです。ツリーは、ブロブの ID をファイルシステム上の位置に割り当て、作業ツリーの状態を記述します。簡単に言えば、コミットの実際の内容（ファイルとその行き先）です。 <!-- tree is a reference to a tree object, a type of object that we’ll see soon. A tree maps blobs IDs to filesystem locations, and describes a state of the work tree. Put simply, it is the actual content of the commit: files, and where they go. -->
 - `parent` はこのコミットの親コミットへの参照です。このフィールドは繰り返されることもあります: たとえばマージコミットには複数の親があります。存在しないこともあります: リポジトリの最初のコミットには明らかに親がありません。 <!-- parent is a reference to the parent of this commit. It may be repeated: merge commits, for example, have multiple parents. It may also be absent: the very first commit in a repository obviously doesn’t have a parent. -->
 - コミットの作者がコミットできる人であるとは限らないため、 `author` と `committer` は分けられています。（ GitHub ユーザーにとっては明らかでないかもしれませんが、多くのプロジェクトで電子メール経由で Git を実行しています。） <!-- author and committer are separate, because the author of a commit is not necessarily the person who can commit it (This may not be obvious for GitHub users, but a lot of projects do Git through e-mail) -->
 - `gpgsig` はこのオブジェクトの PGP 署名です。 <!-- gpgsig is the PGP signature of this object. -->
@@ -888,7 +888,7 @@ dot -O -Tpdf log.dot
 **待った、それは Git をブロックチェーンにするのでは？**
 <!-- Wait, does that make Git a blockchain? -->
 
-暗号通貨のせいで、最近はブロックチェーンが誇大広告になっています。そう、*ある意味では* Git はブロックチェーンです: Git は、各要素がその構造の履歴全体に関連付けられていることを保証する方法で、暗号学的手段によって結び付けられたブロック（コミット）の列です。ですが、この比較を真剣に考えすぎないでください。 GitCoin は必要ありません。本当に。 <!-- Because of cryptocurrencies, blockchains are all the hype these days. And yes, in a way, Git is a blockchain: it’s a sequence of blocks (commits) tied together by cryptographic means in a way that guarantee that each single element is associated to the whole history of the structure. Don’t take the comparison too seriously, though: we don’t need a GitCoin. Really, we don’t. -->
+暗号通貨のせいで、最近はブロックチェーンが誇大広告になっています。そう、*ある意味では* Git はブロックチェーンです: Git は、各要素がその構造の履歴全体に関聯付けられていることを保証する方法で、暗号学的手段によって結び付けられたブロック（コミット）の列です。ですが、この比較を真剣に考えすぎないでください。 GitCoin は必要ありません。本当に。 <!-- Because of cryptocurrencies, blockchains are all the hype these days. And yes, in a way, Git is a blockchain: it’s a sequence of blocks (commits) tied together by cryptographic means in a way that guarantee that each single element is associated to the whole history of the structure. Don’t take the comparison too seriously, though: we don’t need a GitCoin. Really, we don’t. -->
 
 ---
 
