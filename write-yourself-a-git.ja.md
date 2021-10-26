@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2021-10-26T08:35:46">2021年10月26日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2021-10-26T14:17:25">2021年10月26日</time>に行われました。］
 
 ## 導入
 <!-- Introduction -->
@@ -9,7 +9,7 @@
 
 実行しないでください。 <!-- No, don’t run. -->
 
-これは冗談ではないし、まったく複雑なことでもありません: この記事を上から下まで読んでコードを書けば（あるいは、[このリポジトリ](https://github.com/thblt/write-yourself-a-git)をクローンしさえすれば。ただし、自分で書くべきです。本当に。）最後には `wyag` というプログラムが出来上がります。そのプログラムは、 Git の全ての基本機能 (`init`, `add`, `rm`, `status`, `commit`, `log`, ..) を `git` 自体との完全な互換性を持つように実装しています。実際、この記事の最後のコミットは `git` ではなく `wyag` で作られています。そして、その全てが503行の非常にシンプルな Python コードになります。 <!-- It’s not a joke, and it’s really not complicated: if you read this article top to bottom and write the code (or just clone the repository — but you should write the code yourself, really), you’ll end up with a program, called wyag, that will implement all the fundamental features of git: init, add, rm, status, commit, log… in a way that is perfectly compatible with git itself. The last commit of this article was actually created with wyag, not git. And all that in exactly 503 lines of very simple Python code. -->
+これは冗談ではないし、まったく複雑なことでもありません: この記事を上から下まで読んでコードを書けば（あるいは、[このリポジトリ](https://github.com/thblt/write-yourself-a-git)をクローンしさえすれば。ただし、自分で書くべきです。本当に。）最後には `wyag` というプログラムが出来上がります。そのプログラムは、 Git の全ての基本機能（ `init` 、`add` 、 `rm` 、 `status` 、 `commit` 、 `log` ……）を `git` 自体との完全な互換性を持つように実装しています。実際、この記事の最後のコミットは `git` ではなく `wyag` で作られています。そして、その全てが503行の非常にシンプルな Python コードになります。 <!-- It’s not a joke, and it’s really not complicated: if you read this article top to bottom and write the code (or just clone the repository — but you should write the code yourself, really), you’ll end up with a program, called wyag, that will implement all the fundamental features of git: init, add, rm, status, commit, log… in a way that is perfectly compatible with git itself. The last commit of this article was actually created with wyag, not git. And all that in exactly 503 lines of very simple Python code. -->
 
 しかし、それには Git は複雑すぎるのではないか？　私の考えでは、 Git が複雑であるというのは誤解です。 Git が大きなプログラムで、多機能であることは真実です。しかし、そのプログラムのコアは実際には非常にシンプルで、 Git プログラムの見掛け上の複雑さは、それがしばしばひどく反直感的である（そして、ブログ投稿 [Git is a burrito](https://byorgey.wordpress.com/2009/01/12/abstraction-intuition-and-the-monad-tutorial-fallacy/) はおそらく助けにならない）という事実にまず起因しています。しかし、 Git を最も混乱させているのは、そのコアモデルの極端なシンプルさ*と*パワーかもしれません。コアのシンプルさと強力なアプリケーションの組み合わせは、基本的な抽象（モナドとかどう？）の本質的なシンプルさから種々のアプリケーションを得るために必要な精神的飛躍のため、物事を掴みにくくすることがよくあります。 <!-- But isn’t Git too complex for that? That Git is complex is, in my opinion, a misconception. Git is a large program, with a lot of features, that’s true. But the core of that program is actually extremely simple, and its apparent complexity stems first from the fact it’s often deeply counterintuitive (and Git is a burrito blog posts probably don’t help). But maybe what makes Git the most confusing is the extreme simplicity and power of its core model. The combination of core simplicity and powerful applications often makes thing really hard to grasp, because of the mental jump required to derive the variety of applications from the essential simplicity of the fundamental abstraction (monads, anyone?) -->
 
@@ -38,9 +38,9 @@ Git を実装することで、その基本を全て赤裸々に曝け出させ�
 
 この記事を理解するために多くのことを知っている必要はありません: 基本的な Git （明白です）、基本的な Python 、基本的なシェルだけです。 <!-- You’re not going to need to know much to follow this article: just some basic Git (obviously), some basic Python, some basic shell. -->
 
-- まず、最も基本的な **git コマンド**（エキスパートレベルのものではないですが、 `init`, `add`, `rm`, `commit` あるいは `checkout` を使ったことが無ければ迷うことになるでしょう。）にある程度精通していることを想定しています。 <!-- First, I’m only going to assume some level of familiarity with the most basic git commands — nothing like an expert level, but if you’ve never used init, add, rm, commit or checkout, you will be lost. -->
+- まず、最も基本的な **git コマンド**（エキスパートレベルのものではないですが、 `init` 、 `add` 、 `rm` 、 `commit` あるいは `checkout` を使ったことが無ければ迷うことになるでしょう。）にある程度精通していることを想定しています。 <!-- First, I’m only going to assume some level of familiarity with the most basic git commands — nothing like an expert level, but if you’ve never used init, add, rm, commit or checkout, you will be lost. -->
 - 言語的には、 wyag は **Python** で実装されます。繰り返しますが、あまり派手なものは使いませんし、 Python は擬似コードのように見えるので、簡単に理解することができます。（皮肉にも最も複雑なパートはコマンドライン引数をパーズするロジックです。それを理解する必要はまったくありません。）ですが、プログラミングは知っているが Python は一度も使ったことが無いという場合は、インターネットのどこかでクラッシュコースを見付けて Python に慣れておくことをお勧めします。 <!-- Language-wise, wyag will be implemented in Python. Again, I won’t use anything too fancy, and Python looks like pseudo-code anyways, so it will be easy to follow (ironically, the most complicated part will be the command-line arguments parsing logic, and you don’t really need to understand that). Yet, if you know programming but have never done any Python, I suggest you find a crash course somewhere in the internet just to get acquainted with the language. -->
-- `wyag` と `git` はターミナルプログラムです。 Unix ターミナルの使い方は知っていると思います。繰り返しますが、あなたが l77t h4x0r である必要はありませんが、あなたのツールボックスには `cd`, `ls`, `rm`, `tree` やこれらの仲間達が含まれているべきです。 <!-- wyag and git are terminal programs. I assume you know your way inside a Unix terminal. Again, you don’t need to be a l77t h4x0r, but cd, ls, rm, tree and their friends should be in your toolbox. -->
+- `wyag` と `git` はターミナルプログラムです。 Unix ターミナルの使い方は知っていると思います。繰り返しますが、あなたが l77t h4x0r である必要はありませんが、あなたのツールボックスには `cd` 、 `ls` 、 `rm` 、 `tree` やこれらの仲間達が含まれているべきです。 <!-- wyag and git are terminal programs. I assume you know your way inside a Unix terminal. Again, you don’t need to be a l77t h4x0r, but cd, ls, rm, tree and their friends should be in your toolbox. -->
 
 ---
 
@@ -139,7 +139,7 @@ import は以上です。コマンドライン引数を扱うことが多くな�
 argparser = argparse.ArgumentParser(description="The stupid content tracker")
 ```
 
-私達は（git の `init`, `commit` などのような）サブコマンドを扱う必要があります。 argparse のスラングでは、これらは「サブパーザー」と呼ばれます。現時点で必要なのは、私達の CLI がその中のいくつかを使用するということと、全ての呼び出しが実際にはその中の一つ（単に `git` と呼ぶのではなく、 `git COMMAND` と呼びます。）を*要求する*ということを宣言することだけです。 <!-- We’ll need to handle subcommands (as in git: init, commit, etc.) In argparse slang, these are called “subparsers”. At this point we only need to declare that our CLI will use some, and that all invocation will actually require one — you don’t just call git, you call git COMMAND. -->
+私達は（git の `init` 、 `commit` などのような）サブコマンドを扱う必要があります。 argparse のスラングでは、これらは「サブパーザー」と呼ばれます。現時点で必要なのは、私達の CLI がその中のいくつかを使用するということと、全ての呼び出しが実際にはその中の一つ（単に `git` と呼ぶのではなく、 `git COMMAND` と呼びます。）を*要求する*ということを宣言することだけです。 <!-- We’ll need to handle subcommands (as in git: init, commit, etc.) In argparse slang, these are called “subparsers”. At this point we only need to declare that our CLI will use some, and that all invocation will actually require one — you don’t just call git, you call git COMMAND. -->
 
 ``` py
 argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
@@ -426,7 +426,7 @@ Git はオブジェクトを使って非常に多くのものを保存します:
 
 ---
 
-オブジェクトストレージシステムの実装を始める前に、正確なストレージフォーマットを理解しなければなりません。オブジェクトは、そのタイプ（ `blob`, `commit`, `tag` または `tree` ）を指定するヘッダーで始まります。このヘッダーの後は、 ASCII スペース (0x20) 、 ASCII 数字でバイト単位のオブジェクトのサイズ、 null (0x00) （ナルバイト）、オブジェクトのコンテンツと続きます。 Wyag のリポジトリのあるコミットオブジェクトの最初の48バイトは、このようになっています: <!-- Before we start implementing the object storage system, we must understand their exact storage format. An object starts with a header that specifies its type: blob, commit, tag or tree. This header is followed by an ASCII space (0x20), then the size of the object in bytes as an ASCII number, then null (0x00) (the null byte), then the contents of the object. The first 48 bytes of a commit object in Wyag’s repo look like this: -->
+オブジェクトストレージシステムの実装を始める前に、正確なストレージフォーマットを理解しなければなりません。オブジェクトは、そのタイプ（ `blob` 、 `commit` 、 `tag` または `tree` ）を指定するヘッダーで始まります。このヘッダーの後は、 ASCII スペース (0x20) 、 ASCII 数字でバイト単位のオブジェクトのサイズ、 null (0x00) （ナルバイト）、オブジェクトのコンテンツと続きます。 Wyag のリポジトリのあるコミットオブジェクトの最初の48バイトは、このようになっています: <!-- Before we start implementing the object storage system, we must understand their exact storage format. An object starts with a header that specifies its type: blob, commit, tag or tree. This header is followed by an ASCII space (0x20), then the size of the object in bytes as an ASCII number, then null (0x00) (the null byte), then the contents of the object. The first 48 bytes of a commit object in Wyag’s repo look like this: -->
 
 ```
 00000000  63 6f 6d 6d 69 74 20 31  30 38 36 00 74 72 65 65  |commit 1086.tree|
@@ -951,7 +951,7 @@ dot -O -Tpdf log.dot
 [mode] space [path] 0x00 [sha-1]
 ```
 
-- `[mode]` は、最大6バイトの、ファイルモードの ASCII 表現です。たとえば、 100644 はバイト値 49 (ASCII 「1」), 48 (ASCII 「0」), 48, 54, 52, 52 にエンコードされます。 <!-- [mode] is up to six bytes and is an ASCII representation of a file mode. For example, 100644 is encoded with byte values 49 (ASCII “1”), 48 (ASCII “0”), 48, 54, 52, 52. -->
+- `[mode]` は、最大6バイトの、ファイルモードの ASCII 表現です。たとえば、 100644 はバイト値 49 (ASCII 「1」) 、 48 (ASCII 「0」) 、 48 、 54 、 52 、 52 にエンコードされます。 <!-- [mode] is up to six bytes and is an ASCII representation of a file mode. For example, 100644 is encoded with byte values 49 (ASCII “1”), 48 (ASCII “0”), 48, 54, 52, 52. -->
 - それに 0x20 、 ASCII スペースが続きます。 <!-- It’s followed by 0x20, an ASCII space; -->
 - ナル (0x00) で終わるパスが続きます。 <!-- Followed by the null-terminated (0x00) path; -->
 - 20バイトの、バイナリエンコーディングされた、オブジェクトの SHA-1 が続きます。なぜバイナリなのか？　神のみぞ知る。 <!-- Followed by the object’s SHA-1 in binary encoding, on 20 bytes. Why binary? God only knows. -->
