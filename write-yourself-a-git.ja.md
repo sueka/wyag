@@ -1,8 +1,9 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2021-10-26T08:33:08">2021年10月26日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2021-10-26T08:34:23">2021年10月26日</time>に行われました。］
 
-## 導入 <!-- Introduction -->
+## 導入
+<!-- Introduction -->
 
 この記事は、 [Git バージョン管理システム](https://git-scm.com/)をボトムアップで、すなわち、最も基本的なレベルから始め、そこから前進することによって説明する試みです。この試みは簡単すぎるようには思えないし、何度も成功かどうか疑わしい結果を収めてきたものです。しかし、簡単な方法があります: Git の内部を理解するために必要なことは、 Git を最初から再実装することだけです。 <!-- This article is an attempt at explaining the Git version control system from the bottom up, that is, starting at the most fundamental level moving up from there. This does not sound too easy, and has been attempted multiple times with questionable success. But there’s an easy way: all it takes to understand Git internals is to reimplement Git from scratch. -->
 
@@ -51,7 +52,8 @@ Git を実装することで、その基本を全て赤裸々に曝け出させ�
 
 ---
 
-## 入門 <!-- Getting started -->
+## 入門
+<!-- Getting started -->
 
 Python 3 （私は 3.6.5 を使っています。問題に当たったらこれ以上のバージョンを使ってみてください。 Python 2 では全く動作しません。）とあなたのお気に入りのテキストエディターが必要です。サードパーティパッケージや virtualenvs 、通常の Python インタープリター以外のものは必要ありません: 必要なものは全て Python 標準ライブラリにあります。 <!-- You’re going to need Python 3 (I used 3.6.5: if you encounter issues try using at least this version. Python 2 won’t work at all) and your favorite text editor. We won’t need third party packages or virtualenvs, or anything besides a regular Python interpreter: everything we need is in Python’s standard library. -->
 
@@ -166,11 +168,13 @@ def main(argv=sys.argv[1:]):
     elif args.command == "tag"         : cmd_tag(args)
 ```
 
-## リポジトリの作成: init <!-- Creating repositories: init -->
+## リポジトリの作成: init
+<!-- Creating repositories: init -->
 
 時系列順*でも*論理順*でも*最初の Git コマンドが `git init` であることは明らかなので、 `wyag init` を作るところから始めます。これを達成するには、まず、ごく基本的なリポジトリの抽象が必要です。 <!-- Obviously, the first Git command in chronological and logical order is git init, so we’ll begin by creating wyag init. To achieve this, we’re going to first need some very basic repository abstraction. -->
 
-### Repository オブジェクト <!-- The Repository object -->
+### Repository オブジェクト
+<!-- The Repository object -->
 
 リポジトリの抽象が必要であることは明白です: 私達は、 git コマンドを実行する時はほとんどいつでも、リポジトリに何かするか、リポジトリを作成するか、リポジトリから何かを読み取るか、あるいはリポジトリを修正するかしようとしています。 <!-- We’ll obviously need some abstraction for a repository: almost every time we run a git command, we’re trying to do something to a repository, to create it, read from it or modify it. -->
 
@@ -318,7 +322,8 @@ def repo_default_config():
     return ret
 ```
 
-### init コマンド <!-- The init command -->
+### init コマンド
+<!-- The init command -->
 
 これでリポジトリを読み取ったり作ったりするコードが出来たので、 `wyag init` コマンドを作って、このコードをコマンドラインから使えるようにしましょう。 `wyag init` は、丁度 `git init` のように振る舞いますが、勿論、可能なカスタマイズはかなり少ないです。 `wyag init` の構文は: <!-- Now that we have code to read and create repositories, let’s make this code usable from the command line by creating the wyag init command. wyag init behaves just like git init — with much less possible customization, of course. The syntax of wyag init is going to be: -->
 
@@ -355,7 +360,8 @@ wyag init [path]
 
 これで終わりです！　この手順を踏めば、どこにでも git リポジトリを `wyag init` できるようになるはずです。 <!-- And we’re done! If you’ve followed these steps, you should now be able to wayg init a git repository anywhere. -->
 
-### repo_find() 関数 <!-- The repo_find() function -->
+### repo_find() 関数
+<!-- The repo_find() function -->
 
 リポジトリを実装しているうちに後々必要になる関数があります: Git の機能［訳註: 原文の「 init 」を取り除きました。おかしかったら後で直します。］は大抵既存のリポジトリを使います。リポジトリは現在のディレクトリにあることが多いですが、代わりに親ディレクトリにあることもあります。（リポジトリのルートが `~/Documents/MyProject` で、現在のディレクトリが `~/Documents/MyProject/src/tui/frames/mainview/` のように。）これから作る関数 `repo_find()` は、現在のディレクトリから始めて `/` まで遡ってリポジトリを探します。リポジトリとして識別するには `.git` ディレクトリの存在を確認します。 <!-- While we’re implementing repositories, there’s a function we’re going to need a lot later: Almost all Git functions init use an existing repository. It’s often in the current directory, but it may be in a parent instead: your repository’s root may be in ~/Documents/MyProject, but you may currently be in ~/Documents/MyProject/src/tui/frames/mainview/. The repo_find() function we’ll now create will look for a repository, starting at current directory and recursing back until /. To identify something as a repo, it will check for the presence of a .git directory. -->
 
@@ -384,9 +390,11 @@ def repo_find(path=".", required=True):
 
 これでリポジトリの完成です！ <!-- And we’re done with repositories! -->
 
-## オブジェクトの読み書き: hash-object と cat-file <!-- Reading and writing objects: hash-object and cat-file -->
+## オブジェクトの読み書き: hash-object と cat-file
+<!-- Reading and writing objects: hash-object and cat-file -->
 
-### オブジェクトって何？ <!-- What are objects? -->
+### オブジェクトって何？
+<!-- What are objects? -->
 
 さて、リポジトリが出来たので、今度はその中に何かを入れるのが順当です。また、リポジトリは退屈でしたが、 Git 実装を書くというのは単に大量の `mkdir` を書けばよいというものではありません。**オブジェクト**の話をして、 `git hash-object` と `git cat-file` を実装しましょう。 <!-- Now that we have repositories, putting things inside them is in order. Also, repositories are boring, and writing a Git implementation shouldn’t be just a matter of writing a bunch of mkdir. Let’s talk about objects, and let’s implement git hash-object and git cat-file. -->
 
@@ -430,7 +438,8 @@ Git はオブジェクトを使って非常に多くのものを保存します:
 
 オブジェクト（ヘッダーとコンテンツ）は `zlib` で圧縮されて保存されます。 <!-- The objects (headers and contents) are stored compressed with zlib. -->
 
-### 総称的なオブジェクトのオブジェクト <!-- A generic object object -->
+### 総称的なオブジェクトのオブジェクト
+<!-- A generic object object -->
 
 オブジェクトには複数のタイプがありますが、これらは全て同一の保存・検索メカニズムと同一の一般的なヘッダーフォーマットを共有しています。様々なタイプのオブジェクトの詳細に飛び込む前に、共通の機能を抽象化しておく必要があります。最も簡単な方法は、2つの未実装メソッド（ `serialize()` と `deserialize()` ）を持つ、総称的な `GitObject` を作ることです。後ほど、この総称クラスをサブクラス化し、オブジェクトフォーマットごとに実際にこれらの関数を実装します。 <!-- Objects can be of multiple types, but they all share the same storage/retrieval mechanism and the same general header format. Before we dive into the details of various types of objects, we need to abstract over these common features. The easiest way is to create a generic GitObject with two unimplemented methods: serialize() and deserialize(). Later, we’ll subclass this generic class, actually implementing these functions for each object format. -->
 
@@ -456,7 +465,8 @@ whatever it takes to convert it into a meaningful representation.  What exactly 
         raise Exception("Unimplemented!")
 ```
 
-### オブジェクトの読み込み <!-- Reading objects -->
+### オブジェクトの読み込み
+<!-- Reading objects -->
 
 オブジェクトを読み込むには、そのハッシュを知る必要があります。そして、このハッシュからパスを（上で説明した公式（最初の2文字、それからディレクトリ区切り文字 `/` 、それから残りの部分）で）計算し、 gitdir の「 objects 」ディレクトリの中でそれを探します。つまり、 `e673d1b7eaa0aa01b5bc2442d570a765bdaae751` へのパスは `.git/objects/e6/73d1b7eaa0aa01b5bc2442d570a765bdaae751` です。 <!-- To read an object, we need to know its hash. We then compute its path from this hash (with the formula explained above: first two characters, then a directory delimiter /, then the remaining part) and look it up inside of the “objects” directory in the gitdir. That is, the path to e673d1b7eaa0aa01b5bc2442d570a765bdaae751 is .git/objects/e6/73d1b7eaa0aa01b5bc2442d570a765bdaae751. -->
 
@@ -508,7 +518,8 @@ def object_find(repo, name, fmt=None, follow=True):
 
 この奇妙で小さな関数がある理由は、 Git にはオブジェクトを参照する方法が*たくさん*あるからです: 完全なハッシュ、短いハッシュ、タグ……。 `object_find()` が私達の名前解決関数となります。[後で]()実装するというだけで、これは一時的なプレースホルダーです。つまり、本物を実装するまで、オブジェクトを参照する方法は完全なハッシュによる方法しか無いということです。 <!-- The reason for this strange small function is that Git has a lot of ways to refer to objects: full hash, short hash, tags… object_find() will be our name resolution function. We’ll only implement it later, so this is a temporary placeholder. This means that until we implement the real thing, the only way we can refer to an object will be by its full hash. -->
 
-### オブジェクトの書き込み <!-- Writing objects -->
+### オブジェクトの書き込み
+<!-- Writing objects -->
 
 オブジェクトの書き込みは読み込みの逆です: ハッシュを計算し、ヘッダーを挿入し、全てを zlib 圧縮し、その結果を所定の位置に書き込みます。あまり多く説明する必要は無いと思いますが、ハッシュはヘッダーが追加された**後で**計算されるということには注意してください。 <!-- Writing an object is reading it in reverse: we compute the hash, insert the header, zlib-compress everything and write the result in place. This really shouldn’t require much explanation, just notice that the hash is computed after the header is added. -->
 
@@ -548,7 +559,8 @@ class GitBlob(GitObject):
         self.blobdata = data
 ```
 
-### cat-file コマンド <!-- The cat-file command -->
+### cat-file コマンド
+<!-- The cat-file command -->
 
 これで `wyag cat-file` を作成できるようになりました。 `git cat-file` の基本的な構文は2つの位置指定引数だけです: タイプとオブジェクト識別子: <!-- With all that, we can now create wyag cat-file. The basic syntax of git cat-file is just two positional arguments: a type and an object identifier: -->
 
@@ -651,7 +663,8 @@ def object_hash(fd, fmt, repo=None):
     return object_write(obj, repo)
 ```
 
-### packfile はどう？ <!-- What about packfiles? -->
+### packfile はどう？
+<!-- What about packfiles? -->
 
 今実装したのは「緩いオブジェクト」と呼ばれるものです。 Git には packfile と呼ばれる2つ目のオブジェクトストレージメカニズムがあります。 packfile は、緩いオブジェクトと比べて効率的ですが、より複雑でもあります。そして、 `wyag` では実装する価値がありません。簡単に言えば、 packfile は（ `tar` のような）緩いオブジェクトを集めたものでありながら、一部はデルタとして（別のオブジェクトの変形として）保存されているようなものです。 packfile は wyag がサポートするには複雑すぎます。 <!-- What we’ve just implemented is called “loose objects”. Git has a second object storage mechanism called packfiles. Packfiles are much more efficient, but also much more complex, than loose objects. And aren’t worth implementing in wyag. Simply put, a packfile is a compilation of loose objects (like a tar) but some are stored as deltas (as a transformation of another object). Packfiles are way too complex to be supported by wyag. -->
 
@@ -669,9 +682,11 @@ mv .git/objects/pack/pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack .
 cat pack-d9ef004d4ca729287f12aaaacf36fee39baa7c9d.pack | git unpack-objects
 ```
 
-## コミット履歴の読み取り: log <!-- Reading commit history: log -->
+## コミット履歴の読み取り: log
+<!-- Reading commit history: log -->
 
-### コミットのパーズ <!-- Parsing commits -->
+### コミットのパーズ
+<!-- Parsing commits -->
 
 オブジェクトを読み書きできるようになったので、コミットについて考えましょう。コミットオブジェクト（非圧縮、ヘッダーを除く）はこのような見た目をしています: <!-- Now that we can read and write objects, we should consider commits. A commit object (uncompressed, without headers) looks like this: -->
 
@@ -788,7 +803,8 @@ def kvlm_serialize(kvlm):
     return ret
 ```
 
-### コミットオブジェクト <!-- The Commit object -->
+### コミットオブジェクト
+<!-- The Commit object -->
 
 パーザーが出来たので、 `GitCommit` クラスが作れます: <!-- Now we have the parser, we can create the GitCommit class: -->
 
@@ -803,7 +819,8 @@ class GitCommit(GitObject):
         return kvlm_serialize(self.kvlm)
 ```
 
-### log コマンド <!-- The log command -->
+### log コマンド
+<!-- The log command -->
 
 Git が提供するものよりもずっとシンプルなバージョンの `log` を実装します。最も重要なことは、ログの表現を*全く*扱わないということです。代わりに、 Graphviz データをダンプし、ユーザーが `dot` を使って実際のログをレンダリングできるようにします。 <!-- We’ll implement a much, much simpler version of log than what Git provides. Most importantly, we won’t deal with representing the log at all. Instead, we’ll dump Graphviz data and let the user use dot to render the actual log. -->
 
@@ -854,7 +871,8 @@ wyag log e03158242ecab460f31b0d6ae1642880577ccbe8 > log.dot
 dot -O -Tpdf log.dot
 ```
 
-### コミットの分析 <!-- Anatomy of a commit -->
+### コミットの分析
+<!-- Anatomy of a commit -->
 
 ここで、いくつかのことに気付いたかもしれません。 <!-- You may have noticed a few things right now. -->
 
@@ -892,11 +910,13 @@ dot -O -Tpdf log.dot
 
 ---
 
-## コミットデータの読み取り: checkout <!-- Reading commit data: checkout -->
+## コミットデータの読み取り: checkout
+<!-- Reading commit data: checkout -->
 
 コミットが特定の状態のファイルとディレクトリよりもずっと多くのものを保持しているのは良いことですが、本当に便利なものではありません。おそらくツリーオブジェクトも実装しはじめる時期に来たので、コミットを作業ツリーにチェックアウトできるようにしましょう。 <!-- It’s all well that commits hold a lot more than files and directories in a given state, but that doesn’t make them really useful. It’s probably time to start implementing tree objects as well, so we’ll be able to checkout commits into the work tree. -->
 
-### ツリーには何があるの？ <!-- What’s in a tree? -->
+### ツリーには何があるの？
+<!-- What’s in a tree? -->
 
 非形式的には、ツリーは作業ツリーの内容を記述し、ブロブをパスに関聯付けます。ファイルモード、（作業ツリーに対する相対）パス、そして SHA-1 から成る3要素タプルの配列です。典型的なツリーの内容はこのような見た目をしています:
 <!-- Informally, a tree describes the content of the work tree, that it, it associates blobs to paths. It’s an array of three-element tuples made of a file mode, a path (relative to the worktree) and a SHA-1. A typical tree contents may look like this: -->
@@ -922,7 +942,8 @@ dot -O -Tpdf log.dot
 
 ---
 
-### ツリーのパーズ <!-- Parsing trees -->
+### ツリーのパーズ
+<!-- Parsing trees -->
 
 タグやコミットとは違い、ツリーオブジェクトはバイナリオブジェクトです。でも、フォーマットは実際には非常にシンプルです。ツリーは、このフォーマットのレコードを連結したものです: <!-- Unlike tags and commits, tree objects are binary objects, but their format is actually quite simple. A tree is the concatenation of records of the format: -->
 
@@ -1034,7 +1055,8 @@ def cmd_ls_tree(args):
             item.path.decode("ascii")))
 ```
 
-### checkout コマンド <!-- The checkout command -->
+### checkout コマンド
+<!-- The checkout command -->
 
 実装を分かりやすくするために、実際の git コマンドを過度に単純化します。また、セーフガードもいくつか追加します。私達のバージョンの checkout は次のように動作します: <!-- We’re going to oversimplify the actual git command to make our implementation clear and understandable. We’re also going to add a few safeguards. Here’s how our version of checkout will work: -->
 
@@ -1093,9 +1115,11 @@ def tree_checkout(repo, tree, path):
                 f.write(obj.blobdata)
 ```
 
-## 参照、タグ、そしてブランチ <!-- Refs, tags and branches -->
+## 参照、タグ、そしてブランチ
+<!-- Refs, tags and branches -->
 
-### 参照って何？ <!-- What’s a ref? -->
+### 参照って何？
+<!-- What’s a ref? -->
 
 Git の参照（ reference あるいは ref ）は、 git が保持するものの中でも最もシンプルな種類のものです。 `.git/refs` のサブディレクトリにあり、オブジェクトのハッシュの16進表現を ASCII でエンコードしたテキストファイルです。実際、これぐらいシンプルです: <!-- Git references, or refs, are probably the most simple type of things git holds. They live in subdirectories of .git/refs, and are text files containing a hexadecimal representation of an object’s hash, encoded in ASCII. They’re actually as simple as this: -->
 
@@ -1176,7 +1200,8 @@ def show_ref(repo, refs, with_hash=True, prefix=""):
             show_ref(repo, v, with_hash=with_hash, prefix="{0}{1}{2}".format(prefix, "/" if prefix else "", k))
 ```
 
-### タグって何？ <!-- What’s a tag? -->
+### タグって何？
+<!-- What’s a tag? -->
 
 参照の最もシンプルな用途はタグです。タグは、単なるオブジェクト（大抵はコミット）のユーザー定義名です。タグのごく一般的な用途はソフトウェアリリースの識別です: たとえば、プログラムのバージョン 12.78.52 の最後のコミットをマージしたところなので、最近のコミット（ `6071c08` と呼びましょう。）がバージョン 12.78.52 であるとします。この関聯付けを明示するには、次のようにするだけです: <!-- The most simple use of refs is tags. A tag is just a user-defined name for an object, often a commit. A very common use of tags is identifying software releases: You’ve just merged the last commit of, say, version 12.78.52 of your program, so your most recent commit (let’s call it 6071c08) is your version 12.78.52. To make this association explicit, all you have to do is: -->
 
@@ -1200,7 +1225,8 @@ git checkout 6071c08
 
 ---
 
-### タグオブジェクトのパーズ <!-- Parsing tag objects -->
+### タグオブジェクトのパーズ
+<!-- Parsing tag objects -->
 
 すでに、タグは実際には参照だと推測しているでしょう。タグは `.git/refs/tags/` 階層にあります。唯一の注目する価値のある点は、2つのフレーバー（軽量タグとタグオブジェクト）があることです。 <!-- You’ve probably guessed already that tags are actually refs. They live in the .git/refs/tags/ hierarchy. The only point worth noting is that they come in two flavors: lightweight tags and tags objects. -->
 
@@ -1220,7 +1246,8 @@ class GitTag(GitCommit):
 
 これでタグがサポートされました。 <!-- And now we support tags. -->
 
-### tag コマンド <!-- The tag command -->
+### tag コマンド
+<!-- The tag command -->
 
 tag コマンドを追加しましょう。 Git では、このコマンドは2つのことを行います: 新しいタグを作るか、（デフォルトで）既存のタグの一覧を表示するかです。なので、次のように実行できます: <!-- Let’s add the tag command. In Git, it does two things: it creates a new tag or list existing tags (by default). So you can invoke it with: -->
 
@@ -1269,7 +1296,8 @@ def cmd_tag(args):
         show_ref(repo, refs["tags"], with_hash=False)
 ```
 
-### ブランチって何？ <!-- What’s a branch? -->
+### ブランチって何？
+<!-- What’s a branch? -->
 
 見て見ぬ振りをしてきたことに本気で対処する時です: ほとんどの Git ユーザーと同様に、 wyag は、ブランチとは何なのかをまだ全く理解していません。現在のところ、 wyag は、リポジトリを無秩序なオブジェクトの束として扱い、その一部をコミットとして扱っており、コミットはブランチの中にグループ化されているという事実や、 `HEAD` コミット（*すなわち*、**現在の**ブランチの**先頭の**コミット）が存在するという事実を全く表現していません。 <!-- It’s time to address the elephant in the room: like most Git users, wyag still doesn’t have any idea what a branch is. It currently treats a repository as a bunch of disorganized objects, some of them commits, and has no representation whatsoever of the fact that commits are grouped in branches, and that at every point in time there’s a commit that’s HEAD, ie, the head commit of the current branch. -->
 
@@ -1291,9 +1319,11 @@ def cmd_tag(args):
 
 適当なコミットをチェックアウトすると、 git は「 HEAD がデタッチされた状態 (detached HEAD state) 」であることを警告します。これは、もはやどのブランチにも居ないという意味です。この場合、 `.git/HEAD` は**直接**参照です: 内容は SHA-1 です。 <!-- When you just checkout a random commit, git will warn you it’s in “detached HEAD state”. This means you’re not on any branch anymore. In this case, .git/HEAD is a direct reference: it contains a SHA-1. -->
 
-### オブジェクトの参照: `object_find` 関数 <!-- Referring to objects: the object_find function -->
+### オブジェクトの参照: `object_find` 関数
+<!-- Referring to objects: the object_find function -->
 
-#### 名前の解決 <!-- Resolving names -->
+#### 名前の解決
+<!-- Resolving names -->
 
 4つの引数を取って、2つ目を変更せずに返し、他の3つは無視するという[馬鹿げた object_find 関数](#foo)を作った時のことを覚えていますか？　それをより便利なものに置き換える時が来ました。小さいけど便利な、実際の Git の名前解決アルゴリズムのサブセットを実装します。新しい `object_find()` は2つのステップで動作します: 1つ目は、名前が与えられると完全な sha-1 ハッシュを返すというものです。たとえば、 `HEAD` なら現在のブランチの先頭のコミットのハッシュを返したりします。より正確には、この名前解決関数はこのように動作します: <!-- Remember when we’ve created the stupid object_find function that would take four arguments, return the second unmodified and ignore the other three? It’s time to replace it by something more useful. We’re going to implement a small, but usable, subset of the actual Git name resolution algorithm. The new object_find() will work in two steps: first, given a name, it will return a complete sha-1 hash. For example, with HEAD, it will return the hash of the head commit of the current branch, etc. More precisely, this name resolution function will work like this: -->
 
@@ -1393,7 +1423,8 @@ def object_find(repo, name, fmt=None, follow=True):
             return None
 ```
 
-#### rev-parse コマンド <!-- The rev-parse command -->
+#### rev-parse コマンド
+<!-- The rev-parse command -->
 
 `git rev-parse` コマンドは多くのことを行いますが、そのユースケースの1つはリビジョン（コミット）の参照の解決です。 `object_find` の「追跡 (follow) 」機能をテストするために、このインターフェイスに省略可能な `wyag-type` 引数を追加します。 <!-- The git rev-parse commands does a lot, but one of its use cases is solving revision (commits) references. For the purpose of testing the “follow” feature of object_find, we’ll add an optional wyag-type arguments to its interface. -->
 
@@ -1423,13 +1454,15 @@ def cmd_rev_parse(args):
     print (object_find(repo, args.name, args.type, follow=True))
 ```
 
-## ステージングエリアとインデックスファイル <!-- The staging area and the index file -->
+## ステージングエリアとインデックスファイル
+<!-- The staging area and the index file -->
 
 コミットの作成は、大量の（1つだけではなく、再帰的であることを覚えておいてください。正確にディレクトリごとに1つずつ必要です。）新しいツリーオブジェクトとルートツリーオブジェクトを指すコミットオブジェクトを作り、 `HEAD` をそのコミットを指すように更新するだけのようです。このようにすることもできますが、 Git はもっと複雑な道を選びました: インデックスファイルの形式で実装されたステージングエリアです。 <!-- Creating commits seems to be simply a matter of creating a bunch of new tree object (not just one, remember they’re recursive — you need exactly one per directory), a commit object pointing at the root tree object, and updating HEAD to point to that commit — and yes, we could do it like this, but Git chooses a much more complicated road: the staging area, implemented in the form of the index file. -->
 
 Git でコミットするには、まず `git add` や `git rm` で変更を「ステージ」し、*それから*コミットするということはご存じの通りです: コミットのようなオブジェクトを使ってステージングエリアを表現するのが論理的に思えますが、 Git は全く異なった道を選び、インデックスファイルの形式の、全く異なったメカニズムを使っています。インデックスファイルは、 HEAD コミットからの変更の集合を表現しており、コミットするには、これを組み合わせて新しいコミットにしなければなりません。 <!-- You certainly know that to commit in Git, you first “stage” some changes, using git add and git rm, then commit. It would seem logical to use a commit-like object to represent the staging area, but Git goes a completely different way, and uses a completely different mechanism, in the form of the index file. The index file represents a set of changes from the HEAD commit, to commit, they must be combined to create a new commit. -->
 
-### インデックスのパーズ <!-- Parsing the index -->
+### インデックスのパーズ
+<!-- Parsing the index -->
 
 インデックスファイルは、 Git リポジトリが保持しうるデータの中で最も複雑なものです。完全なドキュメントは Git ソースツリーの `Documentation/technical/commit-graph-format.txt` にあり、 [GitHub ミラー上で](https://github.com/git/git/blob/master/Documentation/technical/index-format.txt)読むことができます。インデックスは3つの部分から成ります: <!-- The index file is by far the most complicated piece of data a Git repository can hold. Its complete documentation can be found in Git source tree at Documentation/technical/commit-graph-format.txt, you can read it on the Github mirror. The index is made of three parts: -->
 
@@ -1472,7 +1505,8 @@ class GitIndexEntry(object):
     name = None
 ```
 
-## 後書き <!-- Final words -->
+## 後書き
+<!-- Final words -->
 
 ### License
 
