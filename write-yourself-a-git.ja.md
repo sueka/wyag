@@ -1,6 +1,6 @@
 # Write yourself a Git!
 
-［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2020-12-16T19:32:30">2020年12月17日</time>に行われました。］
+［訳註: このファイルは https://wyag.thb.lt の翻訳です。<time datetime="2020-11-21T15:26:49">2020年11月22日</time>に作成され、最後の変更は<time datetime="2021-10-26T08:33:08">2021年10月26日</time>に行われました。］
 
 ## 導入 <!-- Introduction -->
 
@@ -19,19 +19,19 @@ Git を実装することで、その基本を全て赤裸々に曝け出させ�
 より正確には、私達は: <!-- More precisely, we’ll implement: -->
 
 - `add` () [git man page](https://git-scm.com/docs/git-add)
-- `cat-file` ([wyag source]()) [git man page](https://git-scm.com/docs/git-cat-file)
-- `checkout` ([wyag source]()) [git man page](https://git-scm.com/docs/git-checkout)
+- `cat-file` ([wyag source](#cat-file-コマンド)) [git man page](https://git-scm.com/docs/git-cat-file)
+- `checkout` ([wyag source](#checkout-コマンド)) [git man page](https://git-scm.com/docs/git-checkout)
 - `commit` () [git man page](https://git-scm.com/docs/git-commit)
-- `hash-object` ([wyag source]()) [git man page](https://git-scm.com/docs/git-hash-object)
-- `init` ([wyag source]()) [git man page](https://git-scm.com/docs/git-init)
-- `log` ([wyag source]()) [git man page](https://git-scm.com/docs/git-log)
+- `hash-object` ([wyag source](#hash-object-コマンド)) [git man page](https://git-scm.com/docs/git-hash-object)
+- `init` ([wyag source](#init-コマンド)) [git man page](https://git-scm.com/docs/git-init)
+- `log` ([wyag source](#log-コマンド)) [git man page](https://git-scm.com/docs/git-log)
 - `ls-tree` () [git man page](https://git-scm.com/docs/git-ls-tree)
 - `merge` () [git man page](https://git-scm.com/docs/git-merge)
 - `rebase` () [git man page](https://git-scm.com/docs/git-rebase)
 - `rev-parse` () [git man page](https://git-scm.com/docs/git-rev-parse)
 - `rm` () [git man page](https://git-scm.com/docs/git-rm)
 - `show-ref` () [git man page](https://git-scm.com/docs/git-show-ref)
-- `tag` ([wyag source]()) [git man page](https://git-scm.com/docs/git-tag)
+- `tag` ([wyag source](#tag-コマンド)) [git man page](https://git-scm.com/docs/git-tag)
 
 を実装します。 <!-- More precisely, we’ll implement: -->
 
